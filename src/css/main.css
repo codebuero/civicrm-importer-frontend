@@ -1,0 +1,17 @@
+.container {
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.container header {
+  max-width: 50%;
+  flex: 0 1 auto;
+}
+
+.container section {
+  max-width: 50%;
+  flex: 0 1 auto;
+}
+
