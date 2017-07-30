@@ -1,6 +1,27 @@
 const express = require('express')
-const bodyParser = require('body-parser')
 const path = require('path')
+const bodyParser = require('body-parser')
+
+const compress = require('compression')
+const cors = require('cors')
+const helmet = require('helmet')
+
+const feathers = require('feathers')
+const configuration = require('feathers-configuration')
+const hooks = require('feathers-hooks')
+const rest = require('feathers-rest')
+const socketio = require('feathers-socketio')
+
+const handler = require('feathers-errors/handler')
+const notFound = require('feathers-errors/not-found')
+
+const middleware = require('./middleware');
+const services = require('./services');
+const appHooks = require('./app.hooks');
+
+// const app = feathers()
+
+
 var multer  = require('multer')
 var upload = multer({ dest: __dirname + '../uploads/' })
 
