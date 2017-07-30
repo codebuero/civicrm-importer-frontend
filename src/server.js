@@ -30,8 +30,8 @@ app.use(helmet())
 app.use(compress())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
-// host the css folder in public
-app.use('/css', feathers.static(`${app.get('public')}/css`) )
+// host the public folder
+app.use('/', feathers.static(app.get('public')) )
 
 // Set up Plugins and providers
 app.configure(hooks())
