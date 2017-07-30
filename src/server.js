@@ -52,10 +52,6 @@ app.hooks(appHooks);
 //   res.send(200)
 // })
 
-// app.get('*', function(req, res) {
-//   res.status(404).send('404 - Page Not Found')
-// })
-
 app.use((err, req, res, next) => {
   console.error("Error on request %s %s", req.method, req.url)
   console.error(err.stack)
