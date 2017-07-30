@@ -38,9 +38,6 @@ app.configure(hooks())
 app.configure(rest())
 app.configure(socketio())
 
-app.set('view engine', 'pug')
-app.set('views', './src/views')
-
 app.configure(middleware);
 // Set up our services (see `services/index.js`)
 app.configure(services);
@@ -49,10 +46,6 @@ app.use(notFound());
 app.use(handler());
 
 app.hooks(appHooks);
-
-app.get('/', function(req, res){
-  res.render('index')
-})
 
 // app.post('/import', upload.single('contact_file'), function(req, res, next) {
 //   console.log(req.files)
