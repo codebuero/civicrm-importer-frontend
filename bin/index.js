@@ -4,7 +4,5 @@ var fs = require('fs');
 
 var babelrc = JSON.parse(fs.readFileSync('./.babelrc'));
 require('babel-register')(babelrc);
-var babelrc = JSON.parse(fs.readFileSync('./.babelrc'));
-require('babel-register')(babelrc);
 
-require('../src/server');
+require('../src/app');

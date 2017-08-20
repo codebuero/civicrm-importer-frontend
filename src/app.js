@@ -21,14 +21,27 @@ const blobStorage = fs(__dirname + '/../uploads')
 const handler = require('feathers-errors/handler');
 const notFound = require('feathers-errors/not-found');
 
+const util = require('util')
+
 const middleware = require('./middleware');
 const services = require('./services');
 const appHooks = require('./app.hooks');
 
 const app = feathers();
 
-// Load app configuration
 app.configure(configuration());
+
+// Configure other middleware (see `middleware/index.js`)
+// Enable CORS, security, compression, favicon and body parsing
+app.use(cors());
+app.use(helmet());
+app.use(compress());
+app.use(bodyParser.json({ type: 'application/json', limit: '20mb' }));
+app.use(bodyParser.urlencoded({ extended: true , limit: '20mb' }));
+// Host the public folder
+app.use('/', feathers.static(app.get('public')));
+
+// Load app configuration
 
 app.configure(hooks());
 app.configure(rest());
@@ -37,38 +50,17 @@ app.configure(socketio());
 app.configure(middleware);
 app.configure(services);
 
-// Configure other middleware (see `middleware/index.js`)
-// Enable CORS, security, compression, favicon and body parsing
-app.use(cors());
-app.use(helmet());
-app.use(compress());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-// Host the public folder
-app.use('/', feathers.static(app.get('public')));
-
 app.use('/import',
   multipartMiddleware.single('uri'),
   function(req, res, next) {
     req.feathers.file = req.file
-    console.log(req.file)
     next()
   },
-  blobService({ Model: blobStorage })
+  blobService({ Model: blobStorage }),
+  function(req, res, next) {
+    return res.status(200).json({})
+  },
   )
-
-app.service('/import').before({
-  create: [
-    function(hook) {
-      if (!hook.data.uri && hook.params.file) {
-        const file = hook.params.file
-
-        const uri = dauria.getBase64DataURI(file.buffer, file.mimetype)
-        hook.data = { uri }
-      }
-    }
-  ]
-})
 
 // Configure a middleware for 404s and the error handler
 app.use(notFound());
@@ -76,4 +68,14 @@ app.use(handler());
 
 app.hooks(appHooks);
 
-module.exports = app;
+process.on('uncaughtException', evt => {
+  console.error('uncaughtException: ', evt)
+})
+
+process.on('unhandledRejection', (reason, p) =>
+  console.error('Unhandled Rejection at: Promise ', p, reason)
+)
+
+app.listen(4000, function(){
+  console.log('Listening on port 4000')
+})

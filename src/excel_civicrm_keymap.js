@@ -1,0 +1,26 @@
+module.exports = {
+  'ID': 'external_id',
+  'Herr/Frau': 'gender_id',
+  'Titel': 'prefix_id',
+  'Vorname': 'first_name',
+  'Nachname': 'last_name',
+  'Institution': 'employer_id',
+  'Kontakt erwünscht?': 'is_opt_out',
+  'Email beruflich': [{entity: 'email', location_type_id:2}],
+  'Email privat': [{entity: 'email', location_type_id:1}],
+  'Spendenplattform': '',
+  'Telefon berufli.': {entity: 'phone', location_type_id: 2, phone_type_id: 1},
+  'Mobilnummer': {entity: 'phone', location_type_id: 1, phone_type_id: 2},
+  'Telefon privat': {entity: 'phone', location_type_id: 1, phone_type_id: 2},
+  'Adresse - PLZ': {entity: 'address', field_name: 'postal_code'},
+  'Adresse - Ort': {entity: 'address', field_name: 'city'},
+  'Adresse - Straße': {entity: 'address', field_name: 'street_address'},
+  'Adresse - Land': {entity: 'address', field_name: 'country_id'},
+  'Geburtsdatum': 'birth_date',
+  'Gruppe': {entity:'group_contact', field_name: 'group_id', status: 'Added'}, // nur für presse, Verteiler Seenotrettung u. Ordentliches Mitglied
+  'Tag': '', // für: Unterstützer, Interessenten, Fördermitglied, Newsletter Deutsch, Newsletter Englisch, Monatsrückblick, Feldmitarbeiter, Vorstand,
+  'Mitglied': {}, //Ordentliches Mitglied -> Gruppe, Fördermitglied -> Tag
+  'Kontakt generiert durch': {entity: 'customValue', entity_id: 'contact_id', field_name: 'custom_3'},
+  'IBAN': {entity: 'customValue', entity_id: 'contact_id', field_name: 'custom_1'},
+  'BIC': {entity: 'customValue', entity_id: 'contact_id', field_name: 'custom_2'},
+}

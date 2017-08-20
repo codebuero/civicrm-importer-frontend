@@ -1,0 +1,50 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/Users/arotter/.nodebrew/node/v7.6.0/bin/node',
+1 verbose cli   '/Users/arotter/.nodebrew/current/bin/npm',
+1 verbose cli   'run',
+1 verbose cli   'cli',
+1 verbose cli   '../import-daten/erweiterteKontakte_edit_20170807_o_pwd.xlsx' ]
+2 info using npm@4.1.2
+3 info using node@v7.6.0
+4 verbose run-script [ 'precli', 'cli', 'postcli' ]
+5 info lifecycle civi-importer@0.0.1~precli: civi-importer@0.0.1
+6 silly lifecycle civi-importer@0.0.1~precli: no script for precli, continuing
+7 info lifecycle civi-importer@0.0.1~cli: civi-importer@0.0.1
+8 verbose lifecycle civi-importer@0.0.1~cli: unsafe-perm in lifecycle true
+9 verbose lifecycle civi-importer@0.0.1~cli: PATH: /Users/arotter/.nodebrew/node/v7.6.0/lib/node_modules/npm/bin/node-gyp-bin:/Users/arotter/codebuero.net/sos_mediterranee/civi-importer/node_modules/.bin:/usr/local/sbin:/usr/local/opt/nvm/:/Users/arotter/.themekit:/Users/arotter/.nodebrew/current/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/usr/local/go/bin:/Users/arotter/.nodebrew/current/bin:/Users/arotter/.yarn/bin:/Users/arotter/bin
+10 verbose lifecycle civi-importer@0.0.1~cli: CWD: /Users/arotter/codebuero.net/sos_mediterranee/civi-importer
+11 silly lifecycle civi-importer@0.0.1~cli: Args: [ '-c',
+11 silly lifecycle   'node src/cli.js "../import-daten/erweiterteKontakte_edit_20170807_o_pwd.xlsx"' ]
+12 silly lifecycle civi-importer@0.0.1~cli: Returned: code: 1  signal: null
+13 info lifecycle civi-importer@0.0.1~cli: Failed to exec cli script
+14 verbose stack Error: civi-importer@0.0.1 cli: `node src/cli.js "../import-daten/erweiterteKontakte_edit_20170807_o_pwd.xlsx"`
+14 verbose stack Exit status 1
+14 verbose stack     at EventEmitter.<anonymous> (/Users/arotter/.nodebrew/node/v7.6.0/lib/node_modules/npm/lib/utils/lifecycle.js:279:16)
+14 verbose stack     at emitTwo (events.js:106:13)
+14 verbose stack     at EventEmitter.emit (events.js:192:7)
+14 verbose stack     at ChildProcess.<anonymous> (/Users/arotter/.nodebrew/node/v7.6.0/lib/node_modules/npm/lib/utils/spawn.js:40:14)
+14 verbose stack     at emitTwo (events.js:106:13)
+14 verbose stack     at ChildProcess.emit (events.js:192:7)
+14 verbose stack     at maybeClose (internal/child_process.js:890:16)
+14 verbose stack     at Process.ChildProcess._handle.onexit (internal/child_process.js:226:5)
+15 verbose pkgid civi-importer@0.0.1
+16 verbose cwd /Users/arotter/codebuero.net/sos_mediterranee/civi-importer
+17 error Darwin 14.5.0
+18 error argv "/Users/arotter/.nodebrew/node/v7.6.0/bin/node" "/Users/arotter/.nodebrew/current/bin/npm" "run" "cli" "../import-daten/erweiterteKontakte_edit_20170807_o_pwd.xlsx"
+19 error node v7.6.0
+20 error npm  v4.1.2
+21 error code ELIFECYCLE
+22 error civi-importer@0.0.1 cli: `node src/cli.js "../import-daten/erweiterteKontakte_edit_20170807_o_pwd.xlsx"`
+22 error Exit status 1
+23 error Failed at the civi-importer@0.0.1 cli script 'node src/cli.js "../import-daten/erweiterteKontakte_edit_20170807_o_pwd.xlsx"'.
+23 error Make sure you have the latest version of node.js and npm installed.
+23 error If you do, this is most likely a problem with the civi-importer package,
+23 error not with npm itself.
+23 error Tell the author that this fails on your system:
+23 error     node src/cli.js "../import-daten/erweiterteKontakte_edit_20170807_o_pwd.xlsx"
+23 error You can get information on how to open an issue for this project with:
+23 error     npm bugs civi-importer
+23 error Or if that isn't available, you can get their info via:
+23 error     npm owner ls civi-importer
+23 error There is likely additional logging output above.
+24 verbose exit [ 1, true ]
