@@ -1,7 +1,10 @@
+#!/usr/bin/env node
+
 const XLSX = require('xlsx')
 const { Set } = require('immutable')
 const _ = require('lodash')
 const RestClient = require('./rest')
+const program = require('commander');
 
 const ExcelCiviCrmKeyMap = require('./excel_civicrm_keymap')
 
@@ -48,9 +51,6 @@ const LANGUAGE_CODES = {
   'Irland': 'en_GB',
   'Niederlanden': 'nl_NL',
 }
-
-// console.log(process.argv[2])
-const workbook = XLSX.readFile(process.argv[2])
 
 async function createInstitutionContact(contact, noExternalId = false) {
   console.log('creating Organization contactId:', contact[ID])
@@ -122,6 +122,19 @@ async function getPrefixes() {
     }
   }
   return
+}
+
+async function getEntitiesBy(query) {
+  const req = new RestClient()
+  const baseQuery = {
+    'options[limit]': 5000,
+  }
+
+  const { entity } = query
+  delete query.entity
+  const res = await req.getEntity(entity, { ...baseQuery, ...query })
+
+  return res.body.values
 }
 
 async function createPrefix(name) {
@@ -635,7 +648,7 @@ async function jobRowMainRoutine(row) {
   }
   return
 }
-var i = 0
+
 function jobRowPressFilterRoutine(row) {
   // if (row[ID] === '787') {
   //   return true
@@ -656,36 +669,59 @@ function jobRowPressFilterRoutine(row) {
   //       groups.includes('Verteiler Seenotrettung')
   //  }
 
-  // if (Object.keys(row).includes(DONATE_PLATTFORM)) {
-  //   let donatePlattform = row[DONATE_PLATTFORM].split(',').map(g => g.trim())
-  //   //console.log(donatePlattform)
+  if (Object.keys(row).includes(DONATE_PLATTFORM)) {
+    let donatePlattform = row[DONATE_PLATTFORM].split(',').map(g => g.trim())
+    return donatePlattform.includes('Betterplace') ||
+      donatePlattform.includes('Altruja')
+  }
 
-  //   return donatePlattform.includes('Betterplace') ||
-  //     donatePlattform.includes('Altruja')
-  // }
-
-  return true
+  return false
 }
 
-const rawSheet = workbook.Sheets[workbook.SheetNames[0]]
-
-const jsonSheet = XLSX.utils.sheet_to_json(rawSheet)
+// console.log(process.argv[2])
 
 //const testEntries = filteredEntries.filter(r => ['1010', '3979', '673'].includes(r[ID]))
 
-async function main() {
+async function main(contactFileLocation = null, betterplaceFileLocation = null, altrujaFileLocation = null, eftFileLocation = null, dry) {
   await getPrefixes()
 
   console.log('found existing Prefixes')
   console.log(PREFIXES)
 
-  console.log('Gesamt:', jsonSheet.length)
-  const filteredEntries = jsonSheet.filter(jobRowPressFilterRoutine)
-  console.log('Gefundene Einträge : ' + filteredEntries.length)
-  for (let row of filteredEntries) {
-    await jobRowMainRoutine(row)
+  if (contactFileLocation) {
+    const workbook = XLSX.readFile(contactFileLocation)
+    const rawSheet = workbook.Sheets[workbook.SheetNames[0]]
+    const jsonSheet = XLSX.utils.sheet_to_json(rawSheet)
+
+    console.log('Anzahl aller Kontakteinträge: ', jsonSheet.length)
+    const filteredEntries = jsonSheet.filter(jobRowPressFilterRoutine)
+    console.log('Anzahl gefilterter Einträge : ' + filteredEntries.length)
+
+    if (!dry) {
+      for (let row of filteredEntries) {
+        await jobRowMainRoutine(row)
+      }
+    }
+  }
+
+  if (betterplaceFileLocation) {
+    const accounts = await getEntitiesBy({ entity: 'contact', tag: 7 })
+    console.log(Object.keys(accounts).length)
+  }
+
+  if (altrujaFileLocation) {
+    const accounts = await getEntitiesBy({ entity: 'contact', tag: 6 })
+    console.log(Object.keys(accounts).length)
   }
 }
 
-main()
+program
+  .version('0.1.0')
+  .option('-C, --contacts [loc]', 'file location for contacts', '')
+  .option('-a, --altruja [loc]', 'file location for altruja statements', '')
+  .option('-b, --betterplace [loc]', 'file location for betterplace statements', '')
+  .option('-e, --eft [loc]', 'file location for bank statements', '')
+  .option('-d, --dry', 'dry run file analysis', false)
+  .parse(process.argv);
 
+main(program.contacts, program.betterplace, program.altruja, program.eft, program.dry)
