@@ -94,15 +94,19 @@ function preferredLanguage(contact) {
       return 'de_DE'
     }
   }
+
+  if (!contact[COUNTRY]) {
+    return 'de_DE'
+  }
+
   return DEFAULT_LANGUAGE
 }
 
 function calculateGenderId(contact) {
   if (contact[GENDER]) {
     const g = contact[GENDER].trim()
-    if  (contact[GENDER] === 'Frau') ? 1 : 2
+    return (g === 'Frau') ? 1 : 2
   }
-  return
 }
 
 async function getPrefixes() {
@@ -130,7 +134,7 @@ async function createPrefix(name) {
 
   const req = new RestClient()
   const res = await req.createEntity('option_value', q)
-  console.log(res)
+
   if (res.body && res.body.values && res.body.count && res.body.count > 0) {
     const createdPrefix = res.body.values[Object.keys(res.body.values)[0]]
     PREFIXES[createdPrefix.name] = createdPrefix.value
@@ -158,15 +162,36 @@ async function calculatePrefixId(contact) {
   return
 }
 
-async function createIndividualContact(contact, employerId = null) {
+async function createHouseholdContact(contact) {
+  console.log('creating Household contactId:', contact[ID])
+
+  let query = {
+      contact_type: 'Household',
+      do_not_sms: 1,
+      do_not_trade: 1,
+      external_identifier: contact[ID],
+      preferred_language: preferredLanguage(contact),
+      household_name: contact['household_name'],
+  }
+  const req = new RestClient()
+
+  const contactResponse = await req.createEntity('contact', query)
+
+  return contactResponse.body.id
+}
+
+async function createIndividualContact(contact, employerId = null, householdId = null, memberId = null) {
   console.log('creating Individual contactId:', contact[ID])
   let prefixId = await calculatePrefixId(contact)
   console.log('prefix_id', prefixId)
+
+  const extId = (memberId) ? `${contact[ID]}_${memberId}` : contact[ID]
+
   let query = {
     contact_type: 'Individual',
     do_not_sms: 1,
     do_not_trade: 1,
-    external_identifier: contact[ID],
+    external_identifier: extId,
     gender_id: calculateGenderId(contact),
     prefix_id: prefixId,
     first_name: contact[FIRST],
@@ -185,8 +210,19 @@ async function createIndividualContact(contact, employerId = null) {
   }
 
   const req = new RestClient()
-  const res = await req.createEntity('contact', query)
-  return res.body.id
+  const contactResponse = await req.createEntity('contact', query)
+
+  if (householdId) {
+    const relationsQuery = {
+      contact_id_a: contactResponse.body.id,
+      contact_id_b: householdId,
+      relationship_type_id: 8,
+    }
+    const householdRelationResponse = await req.createEntity('relationship', relationsQuery)
+  }
+
+
+  return contactResponse.body.id
 }
 
 async function createEmails(id, contact, workFirst = false) {
@@ -312,10 +348,10 @@ function parseGroups(groups) {
   let _g = groups.split(',').map(g => g.trim())
 
   if (_g.length > 0) {
-    (_g.includes('Pressevertreter*innen_BPK')) ? _o.push(2):null;
+    (_g.includes('Pressevertreter*innen_BPK')) ? _o.push(3):null;
     (_g.includes('Presseverteiler Englisch')) ? _o.push(4):null;
-    (_g.includes('Presseverteiler Deutsch')) ? _o.push(3):null;
-    (_g.includes('Presseverteiler Institutionen')) ? _o.push(5):null;
+    (_g.includes('Presseverteiler Deutsch')) ? _o.push(5):null;
+    (_g.includes('Presseverteiler Institutionen')) ? _o.push(6):null;
     (_g.includes('Verteiler Seenotrettung')) ? _o.push(7):null;
   }
 
@@ -327,7 +363,7 @@ function parseMemberStates(memberStates) {
   let _m = memberStates.split(',').map(g => g.trim())
 
   if (_m.length > 0) {
-    (_m.includes('Ordentliches Mitglied')) ? _o.push(6):null;
+    (_m.includes('Ordentliches Mitglied')) ? _o.push(8):null;
   }
   return _o
 }
@@ -335,6 +371,132 @@ function parseMemberStates(memberStates) {
 function parseDonatePlatformStates(donationPlatform) {
   let platforms = donationPlatform.split(',').map(g => g.trim())
   return platforms
+}
+
+function parseNameField(name) {
+  return name.split('+').map(n => n.trim())
+}
+
+async function parseHouseholdContact(row) {
+  var him
+  var her
+  var household
+  var hisResponseId
+  var herResponseId
+  var householdResponseId
+
+  if (row[LAST]) {
+    let lastNames = parseNameField(row[LAST])
+    let firstNames = parseNameField(row[FIRST])
+
+
+    if (lastNames.length === 2 && firstNames.length === 2) {
+      household = _.clone(row)
+      her = _.clone(row)
+      him = _.clone(row)
+
+      household[LAST] = ''
+      household[FIRST] = ''
+      household['household_name'] = lastNames.join(' + ')
+
+      her[LAST] = lastNames[1]
+      her[GENDER] = 'Frau'
+      const herTitleName = firstNames[1].split(' ')
+
+      if (herTitleName.length > 1) {
+        her[TITLE] = herTitleName.slice(0, herTitleName.length - 1).join(' ')
+        her[FIRST] = herTitleName[herTitleName.length - 1]
+      } else {
+        her[FIRST] = firstNames[1]
+      }
+
+      him[LAST] = lastNames[0]
+      him[GENDER] = 'Herr'
+      const hisTitleName = firstNames[0].split(' ')
+
+      if (hisTitleName.length > 1) {
+        him[TITLE] = hisTitleName.slice(0, hisTitleName.length - 1).join(' ')
+        him[FIRST] = hisTitleName[hisTitleName.length - 1]
+      } else {
+        him[FIRST] = firstNames[0]
+      }
+      if (row[TITLE]) {
+        him[TITLE] = row[TITLE]
+      }
+    }
+    if (lastNames.length === 1 && firstNames.length === 2) {
+      household = _.clone(row)
+      her = _.clone(row)
+      him = _.clone(row)
+
+      household[LAST] = ''
+      household[FIRST] = ''
+      household['household_name'] = lastNames[0]
+
+
+      her[LAST] = lastNames[0]
+      her[GENDER] = 'Frau'
+      her[TITLE] = ''
+      const herTitleName = firstNames[1].split(' ')
+
+      if (herTitleName.length > 1) {
+        her[TITLE] = herTitleName.slice(0, herTitleName.length - 1).join(' ')
+        her[FIRST] = herTitleName[herTitleName.length - 1]
+      } else {
+        her[FIRST] = firstNames[1]
+      }
+
+      him[LAST] = lastNames[0]
+      him[GENDER] = 'Herr'
+      const hisTitleName = firstNames[0].split(' ')
+
+      if (hisTitleName.length > 1) {
+        him[TITLE] = hisTitleName.slice(0, hisTitleName.length - 1).join(' ')
+        him[FIRST] = hisTitleName[hisTitleName.length - 1]
+      } else {
+        him[FIRST] = firstNames[0]
+      }
+      if (row[TITLE]) {
+        him[TITLE] = row[TITLE]
+      }
+    }
+    if (lastNames.length === 2 && firstNames.length === 0) {
+      household = _.clone(row)
+
+      household[LAST] = ''
+      household[FIRST] = ''
+      household['household_name'] = lastNames.join(' + ')
+    }
+    if (lastNames.length === 1 && firstNames[0].trim() === '') {
+      household = _.clone(row)
+
+      household[LAST] = ''
+      household[FIRST] = ''
+      household['household_name'] = lastNames[0]
+    }
+    if (lastNames.length === 1 && firstNames.length === 0) {
+      household[LAST] = ''
+      household[FIRST] = ''
+      household['household_name'] = lastNames[0]
+    }
+  }
+  console.log(household)
+  if (household) {
+    householdResponseId = await createHouseholdContact(household)
+  }
+
+  if (her) {
+    herResponseId = await createIndividualContact(her, null, householdResponseId, 1)
+  }
+
+  if (him) {
+    hisResponseId = await createIndividualContact(him, null, householdResponseId, 2)
+  }
+
+  console.log(`created Household with ID ${householdResponseId} and her ID ${herResponseId} and his ID ${hisResponseId}`)
+
+  return householdResponseId
+
 }
 
 async function createGroupMembership(contactId, groupId) {
@@ -410,19 +572,11 @@ async function checkForContactExistence(id) {
   return false
 }
 
-function parseKindOfGender(contact){
-  if(contact[GENDER]) {
-    if (['Haushalt'].includes(contact[GENDER])) {
-
-    }
-  }
-  return []
-}
-
 async function jobRowMainRoutine(row) {
   let queries = []
   let contactId
   let employerId
+  let householdId
 
   const userExists = await checkForContactExistence(row[ID])
 
@@ -430,88 +584,108 @@ async function jobRowMainRoutine(row) {
     if (row[ORGA] && !row[FIRST] && !row[LAST]) {
       contactId = await createInstitutionContact(row)
     }
-
-    if (row[ORGA] && row[FIRST] && row[LAST]) {
+    if (row[ORGA] && row[FIRST] && row[LAST] &&
+        (!row[FIRST].includes('+') && !row[LAST].includes('+'))) {
       employerId = await createInstitutionContact(row, true)
+
       contactId = await createIndividualContact(row, employerId)
     }
 
-    if (!row[ORGA] && row[FIRST] && row[LAST]) {
-      contactId = await createIndividualContact(row)
+    if (!row[ORGA] && row[FIRST] && row[LAST] &&
+       (row[FIRST].split('+').length > 1 || row[LAST].split('+').length > 1)) {
+       householdId = await parseHouseholdContact(row)
     }
 
+    if (!row[ORGA] && row[FIRST] && row[LAST] &&
+       (!row[FIRST].includes('+') && !row[LAST].includes('+'))) {
+       contactId = await createIndividualContact(row)
+    }
+
+    const id = contactId || householdId
+
     if (row[EMAIL_WORK] || row[EMAIL_HOME]) {
-      await createEmails(contactId, row, employerId)
+      await createEmails(id, row, employerId)
     }
 
     if (row[PHONE_WORK] || row[MOBILE_HOME] || row[PHONE_HOME]) {
-      await createPhones(contactId, row)
+      await createPhones(id, row)
     }
 
     if (row[POSTCODE] || row[STREET] || row[CITY] || row[COUNTRY]) {
-      await createAddress(contactId, row, employerId)
+      await createAddress(id, row, employerId)
     }
 
   //  if ((row[IBAN] || row[BIC]) && row[ACCOUNT_DATA_OK])  {
     if (row[IBAN] || row[BIC]) {
-      await createBankAccount(contactId, row)
+      await createBankAccount(id, row)
     }
 
     if (row[SOURCE]) {
-      await createContactGeneratedBy(contactId, row)
+      await createContactGeneratedBy(id, row)
     }
 
     if (row[GROUP] || row[TAG] || row[MEMBER] || row[DONATE_PLATTFORM]) {
-      await createGroupsAndTags(contactId, row)
+      await createGroupsAndTags(id, row)
     }
 
-    console.log(`finished extern: ${row[ID]} - intern: ${contactId}`)
+    console.log(`finished extern: ${row[ID]} - intern: ${id}`)
     console.log(row[ORGA] + ' - ' + row[FIRST] + ' ' + row[LAST])
   } else {
     console.log('User existiert bereits: ', row[ID])
   }
   return
 }
-
+var i = 0
 function jobRowPressFilterRoutine(row) {
+  // if (row[ID] === '787') {
+  //   return true
+  // }
+
+  //filter specific ids that should be inserted manually
+  if (['2246', '138', '2005', '2314', '3245'].includes(row[ID])) {
+    return false
+  }
+
   // if (Object.keys(row).includes(GROUP)) {
-  //   let groups = row['Gruppe'].split(',').map(g => g.trim())
+  //   let groups = row[GROUP].split(',').map(g => g.trim())
 
   //   return groups.includes('Pressevertreter*innen_BPK') ||
   //       groups.includes('Presseverteiler Englisch') ||
   //       groups.includes('Presseverteiler Deutsch') ||
   //       groups.includes('Presseverteiler Institutionen') ||
   //       groups.includes('Verteiler Seenotrettung')
+  //  }
+
+  // if (Object.keys(row).includes(DONATE_PLATTFORM)) {
+  //   let donatePlattform = row[DONATE_PLATTFORM].split(',').map(g => g.trim())
+  //   //console.log(donatePlattform)
+
+  //   return donatePlattform.includes('Betterplace') ||
+  //     donatePlattform.includes('Altruja')
   // }
 
-  if (Object.keys(row).includes(DONATE_PLATTFORM)) {
-    let donatePlattform = row[DONATE_PLATTFORM].split(',').map(g => g.trim())
-
-    return donatePlattform.includes('Betterplace')
-  }
-
-  return false
+  return true
 }
 
 const rawSheet = workbook.Sheets[workbook.SheetNames[0]]
 
 const jsonSheet = XLSX.utils.sheet_to_json(rawSheet)
 
-const filteredEntries = jsonSheet.filter(jobRowPressFilterRoutine)
-
 //const testEntries = filteredEntries.filter(r => ['1010', '3979', '673'].includes(r[ID]))
 
-async function main(filteredEntries) {
+async function main() {
   await getPrefixes()
 
   console.log('found existing Prefixes')
   console.log(PREFIXES)
 
+  console.log('Gesamt:', jsonSheet.length)
+  const filteredEntries = jsonSheet.filter(jobRowPressFilterRoutine)
   console.log('Gefundene Einträge : ' + filteredEntries.length)
   for (let row of filteredEntries) {
     await jobRowMainRoutine(row)
   }
 }
 
-main(filteredEntries)
+main()
 
