@@ -824,6 +824,29 @@ function enhanceContactsWithFoundContributions(accounts, statements, processor) 
 
   return accounts
 }
+
+async function addBetterplaceContributions(contactId, contributions) {
+  const req = new RestClient()
+
+
+  for (const con of contributions) {
+    const q = {
+      contact_id: contactId,
+      financial_type_id: 1,
+      payment_instrument_id: 5,
+      receive_date: con[BETTERPLACE_WHEN],
+      total_amount: con[BETTERPLACE_AMOUNT],
+      currency: 'EUR',
+      source: 'Betterplace',
+      contribution_status_id: 1,
+    }
+    const res = await req.createEntity('contribution', q)
+
+    console.log(`created contribution with id ${res.body.id} for contact ${contactId}`)
+  }
+  return
+}
+
 function parseInstrument(contribution){
   const source = contribution['Quelle']
   const sourceIdMap = {
