@@ -1,9 +1,12 @@
 const request = require('superagent')
 const assert = require('assert')
 
+const HOST = '192.168.0.46'
+//const HOST = 'localhost'
+
 module.exports = class RestClient {
   constructor() {
-    this.baseUrl = 'http://192.168.0.46:8081/sites/all/modules/civicrm/extern/rest.php'
+    this.baseUrl = `http://${HOST}:8081/sites/all/modules/civicrm/extern/rest.php`
     //this.appId = '4276a76c2f8e0dd666e06ec3f1a80259'
     this.appId = '3b64052e5f03552fbb44d07677f21ad9'
     this.apiKey = 'kreis'
