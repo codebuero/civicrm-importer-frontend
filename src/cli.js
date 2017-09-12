@@ -898,6 +898,29 @@ async function addAltrujaContributions(contactId, contributions) {
 
   return
 }
+
+async function addEftContributions(contactId, contributions) {
+  const req = new RestClient()
+
+  for (const con of contributions) {
+    const receiveDate = moment(con[EFT_WHEN], 'MM/DD/YY').format()
+    const q = {
+      contact_id: contactId,
+      financial_type_id: 1,
+      payment_instrument_id: 5,
+      receive_date: receiveDate,
+      total_amount: con[EFT_AMOUNT],
+      currency: 'EUR',
+      source: 'Überweisung',
+      contribution_status_id: 1,
+    }
+    const res = await req.createEntity('contribution', q)
+
+    console.log(`created contribution with id ${res.body.id} from ${receiveDate} for contact ${contactId}`)
+  }
+  return true
+}
+
 async function main(contactFileLocation = null, betterplaceFileLocation = null, altrujaFileLocation = null, eftFileLocation = null, dry) {
   await getPrefixes()
 
