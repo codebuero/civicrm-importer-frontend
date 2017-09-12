@@ -870,6 +870,34 @@ function parseFinancialType(contribution){
 
   return typeIdMap[type]
 }
+
+async function addAltrujaContributions(contactId, contributions) {
+  const req = new RestClient()
+
+  for (const con of contributions) {
+    if (['durchgefuehrt', 'Offline-Spende'].includes(con['Altruja Status'])) {
+      const receiveDate = moment(con[ALTRUJA_WHEN], 'DD.MM.YY').format()
+      const q = {
+        contact_id: contactId,
+        financial_type_id: parseFinancialType(con),
+        payment_instrument_id: parseInstrument(con),
+        receive_date: receiveDate,
+        total_amount: con[ALTRUJA_AMOUNT],
+        trxn_id: con['Spenden-ID'],
+        currency: 'EUR',
+        source: 'Altruja',
+        contribution_status_id: 1,
+      }
+      const res = await req.createEntity('contribution', q)
+
+      console.log(`created contribution with id ${res.body.id} from ${receiveDate} for contact ${contactId}`)
+    } else {
+      canceldPayments.push(con)
+    }
+  }
+
+  return
+}
 async function main(contactFileLocation = null, betterplaceFileLocation = null, altrujaFileLocation = null, eftFileLocation = null, dry) {
   await getPrefixes()
 
