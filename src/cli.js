@@ -583,30 +583,35 @@ const TAG_IDS = {
   'Volunteer': 9,
 }
 
+function parseGroupsField(contactId, contact) {
+  let groupsAndTags = _.compact([contact[GROUP],contact[TAG],contact[MEMBER],contact[DONATE_PLATTFORM]])
+  let groups = []
+  let tags = []
+  groupsAndTags = groupsAndTags.join(',').split(',').map(g => g.trim())
+  console.log(`found ${groupsAndTags.length} potential groups and tags`)
+  groupsAndTags.forEach(g => {
+    if (Object.keys(GROUP_IDS).includes(g)) {
+      return groups.push(GROUP_IDS[g])
+    }
+    if (Object.keys(TAG_IDS).includes(g)) {
+      return tags.push(TAG_IDS[g])
+    }
+  })
+  console.log(`found ${groups.length} groups and ${tags.length} tags`)
+  return [groups, tags]
+}
+
 async function createGroupsAndTags(contactId, contact) {
-  console.log('creating group membership external ContactId - internal ContactId:', contact[ID], ' - ', contactId)
-  if (contact[GROUP]) {
-    const groupsToCreate = parseGroups(contact[GROUP])
+  console.log('creating group and/or tag membership external ContactId - internal ContactId:', contact[ID], ' - ', contactId)
+  if (contact[GROUP] || contact[TAG] || contact[MEMBER] || contact[DONATE_PLATTFORM]) {
+    const [groupsToCreate, tagsToCreate] = parseGroupsField(contactId, contact)
 
     for (let g of groupsToCreate) {
       await createGroupMembership(contactId, g)
     }
-  }
-  if (contact[MEMBER]) {
-    const groupsFromMemberState = parseMemberStates(contact[MEMBER])
-    for (let m of groupsFromMemberState) {
-      await createGroupMembership(contactId, m)
-    }
-  }
-  if (contact[DONATE_PLATTFORM]) {
-    const donationPlatforms = parseDonatePlatformStates(contact[DONATE_PLATTFORM])
-    for (let d of donationPlatforms) {
-      if (d === 'Betterplace') {
-        await createTag(contactId, 7)
-      }
-      if (d === 'Altruja') {
-        await createTag(contactId, 6)
-      }
+
+    for (let t of tagsToCreate) {
+      await createTag(contactId, t)
     }
   }
 }
