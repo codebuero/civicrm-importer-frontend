@@ -911,7 +911,7 @@ async function addEftContributions(contactId, contributions) {
   return true
 }
 
-async function main(eftFileLocation = null, dry) {
+async function eft(eftFileLocation = null, dry) {
   if (eftFileLocation) {
 
     const accountsWithIban = await getAllContactsWithIban()
@@ -1023,6 +1023,8 @@ program
   .option('-b, --betterplace [loc]', 'file location for betterplace statements', '')
   .option('-e, --eft [loc]', 'file location for bank statements', '')
   .option('-d, --dry', 'dry run file analysis', false)
+  .option('-mb, --missingBetterplace', 'print out not imported betterplace cons', '')
+  .option('-ma, --missingAltruja', 'print out not imported altruja cons', '')
   .parse(process.argv)
 
 
@@ -1038,5 +1040,6 @@ if (program.altruja) {
   return altruja(program.altruja, program.dry)
 }
 
-main(program.eft, program.dry)
-
+if (program.eft) {
+  return eft(program.eft, program.dry)
+}
