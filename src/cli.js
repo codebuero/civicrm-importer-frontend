@@ -383,21 +383,6 @@ async function createBankAccount(id, contact) {
   }
 }
 
-function parseGroups(groups) {
-  let _o = []
-  let _g = groups.split(',').map(g => g.trim())
-
-  if (_g.length > 0) {
-    (_g.includes('Pressevertreter*innen_BPK')) ? _o.push(3):null;
-    (_g.includes('Presseverteiler Englisch')) ? _o.push(4):null;
-    (_g.includes('Presseverteiler Deutsch')) ? _o.push(5):null;
-    (_g.includes('Presseverteiler Institutionen')) ? _o.push(6):null;
-    (_g.includes('Verteiler Seenotrettung')) ? _o.push(7):null;
-  }
-
-  return _o
-}
-
 function parseMemberStates(memberStates) {
   let _o = []
   let _m = memberStates.split(',').map(g => g.trim())
