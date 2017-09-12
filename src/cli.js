@@ -743,6 +743,15 @@ async function parseCsvFile(filelocation) {
   const parser = new CSVParser(csvContent, { delimiter: ';'})
   return parser.json()
 }
+
+function enhancedContactsWithEmails(accounts, emails) {
+  const emailContactIds = Object.keys(emails).map(emailId => ({emailId, contactId: emails[emailId].contact_id}))
+  for( let id in accounts) {
+    const foundEmails = emailContactIds.filter(emailContactId => id === emailContactId.contactId)
+    accounts[id]['emails'] = foundEmails.map((foundEmail) => emails[foundEmail.emailId].email)
+  }
+  return accounts
+}
 async function main(contactFileLocation = null, betterplaceFileLocation = null, altrujaFileLocation = null, eftFileLocation = null, dry) {
   await getPrefixes()
 
