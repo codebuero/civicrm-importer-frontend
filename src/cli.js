@@ -961,6 +961,6 @@ program
   .option('-b, --betterplace [loc]', 'file location for betterplace statements', '')
   .option('-e, --eft [loc]', 'file location for bank statements', '')
   .option('-d, --dry', 'dry run file analysis', false)
-  .parse(process.argv);
+  .parse(process.argv)
 
 main(program.contacts, program.betterplace, program.altruja, program.eft, program.dry)
