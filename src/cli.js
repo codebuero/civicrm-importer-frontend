@@ -752,6 +752,78 @@ function enhancedContactsWithEmails(accounts, emails) {
   }
   return accounts
 }
+
+const BETTERPLACE_AMOUNT = 'Spendenbetrag in Euro'
+const ALTRUJA_AMOUNT = 'Spendenbetrag'
+const BETTERPLACE_WHEN = 'Gespendet am'
+const ALTRUJA_WHEN = 'Datum'
+const BETTERPLACE_MAIL = 'E-Mail'
+const ALTRUJA_MAIL = 'Email'
+const EFT_WHEN = 'Valutadatum'
+const EFT_AMOUNT = 'Betrag'
+
+
+function enhanceContactsWithFoundContributions(accounts, statements, processor) {
+  let unprocessedStatements = _.clone(statements)
+
+  if (processor === 'betterplace' || processor === 'altruja') {
+    for (let id in accounts) {
+      let contributions = []
+      for (let email of accounts[id]['emails']) {
+        let foundInStatements = statements.filter(s => {
+          if (processor === 'betterplace') {
+            return s[BETTERPLACE_MAIL].toLowerCase() === email.toLowerCase()
+          }
+          if (processor === 'altruja') {
+            return s[ALTRUJA_MAIL].toLowerCase() === email.toLowerCase()
+          }
+        })
+        contributions = contributions.concat(foundInStatements)
+      }
+      accounts[id]['contributions'] = contributions
+
+      for(let c of contributions) {
+        const idToRemove = unprocessedStatements.findIndex(p => (c[BETTERPLACE_MAIL] === p[BETTERPLACE_MAIL] && c[BETTERPLACE_WHEN] === p[BETTERPLACE_WHEN]) ||
+                                                                (c[ALTRUJA_MAIL] === p[ALTRUJA_MAIL] && c[ALTRUJA_WHEN] === p[ALTRUJA_WHEN]))
+        unprocessedStatements = unprocessedStatements.splice(idToRemove, 1)
+      }
+    }
+    console.log('unprocessedStatements')
+    console.log(unprocessedStatements)
+    console.log(unprocessedStatements.length)
+    console.log('Accounts enhanced: ', Object.keys(accounts).length)
+  }
+
+  if (processor === 'eft') {
+    for (let ac of accounts) {
+      let contributions = []
+      let toLookupIban = ac.iban
+      let foundInStatements = statements.filter(s => {
+        if (s['Kontonummer']) {
+          return s['Kontonummer'] === toLookupIban
+        }
+        return false
+      })
+      contributions = contributions.concat(foundInStatements)
+
+      ac.contributions = contributions
+
+      for(let c of contributions) {
+        const idToRemove = unprocessedStatements.findIndex(p => p['Valutadatum'] === c['Valutadatum'] && p['Kontonummer'] === c['Kontonummer'] && p['BLZ'] === c['BLZ'])
+        unprocessedStatements = unprocessedStatements.splice(idToRemove, 1)
+      }
+    }
+
+
+    console.log('unprocessedStatements')
+    console.log(unprocessedStatements)
+    console.log(unprocessedStatements.length)
+    console.log('Accounts enhanced: ', Object.keys(accounts).length)
+    return accounts
+  }
+
+  return accounts
+}
 async function main(contactFileLocation = null, betterplaceFileLocation = null, altrujaFileLocation = null, eftFileLocation = null, dry) {
   await getPrefixes()
 
