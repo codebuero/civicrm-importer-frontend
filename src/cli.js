@@ -737,6 +737,12 @@ function jobRowPressFilterRoutine(row) {
 
 //const testEntries = filteredEntries.filter(r => ['1010', '3979', '673'].includes(r[ID]))
 
+async function parseCsvFile(filelocation) {
+  const readFile = util.promisify(fs.readFile)
+  const csvContent = await readFile(filelocation, 'utf8')
+  const parser = new CSVParser(csvContent, { delimiter: ';'})
+  return parser.json()
+}
 async function main(contactFileLocation = null, betterplaceFileLocation = null, altrujaFileLocation = null, eftFileLocation = null, dry) {
   await getPrefixes()
 
