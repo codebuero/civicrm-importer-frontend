@@ -53,24 +53,34 @@ const log = console.log
 const NL_EMAIL = 'E-Mail-Adresse'
 const NL_TAG = 'Newsletter Deutsch'
 
+// contactSheet.forEach((c) => {
+//   const emailsToLookUp = _.compact([c[EMAIL_HOME], c[EMAIL_WORK]])
+//   log('checking emails', emailsToLookUp.toString())
+//   const foundInNL = newsletterSheet.filter(n => emailsToLookUp.includes(n[NL_EMAIL]))
+//   log('found in NL List', foundInNL.length)
+//   const currentGroupsIncludesNLTag = `${c[GROUP]}`.includes(NL_TAG)
+//   log('already have correct Tag', currentGroupsIncludesNLTag)
+//   if (!currentGroupsIncludesNLTag && foundInNL.length > 0) {
+//     let _g = c[GROUP] || ''
+//     _g = _.compact(_g.split(','))
+//     _g.push(NL_TAG)
+//     c[GROUP] = _g.join(',')
+//     log('updated user with Id', c[ID])
+//   }
+// })
+
 contactSheet.forEach((c) => {
   const emailsToLookUp = _.compact([c[EMAIL_HOME], c[EMAIL_WORK]])
   log('checking emails', emailsToLookUp.toString())
-  const foundInNL = newsletterSheet.filter(n => emailsToLookUp.includes(n[NL_EMAIL]))
-  log('found in NL List', foundInNL.length)
-  const currentGroupsIncludesNLTag = `${c[GROUP]}`.includes(NL_TAG)
-  log('already have correct Tag', currentGroupsIncludesNLTag)
-  if (!currentGroupsIncludesNLTag && foundInNL.length > 0) {
-    let _g = c[GROUP] || ''
-    _g = _.compact(_g.split(','))
-    _g.push(NL_TAG)
-    c[GROUP] = _g.join(',')
-    log('updated user with Id', c[ID])
+  const indexToMark = newsletterSheet.findIndex(n => emailsToLookUp.includes(n[NL_EMAIL]))
+  log('index in NL List', indexToMark)
+  if (indexToMark > -1) {
+    newsletterSheet[indexToMark][NL_EMAIL] = ''
   }
 })
 
-const enhancedWs = XLSX.utils.json_to_sheet(contactSheet)
+const enhancedWs = XLSX.utils.json_to_sheet(newsletterSheet)
 
-contactWorkbook.Sheets[contactWorkbook.SheetNames[0]] = enhancedWs
+newsletterWorkbook.Sheets[newsletterWorkbook.SheetNames[0]] = enhancedWs
 
-XLSX.writeFile(contactWorkbook, contactFileOutputFilename)
+XLSX.writeFile(newsletterWorkbook, newsletterOutputFilename)
