@@ -505,7 +505,7 @@ async function parseHouseholdContact(row) {
       household['household_name'] = lastNames[0]
     }
   }
-  console.log(household)
+
   if (household) {
     householdResponseId = await createHouseholdContact(household)
   }
@@ -709,13 +709,16 @@ function jobRowPressFilterRoutine(row) {
   //       groups.includes('Verteiler Seenotrettung')
   //  }
 
-  if (Object.keys(row).includes(DONATE_PLATTFORM)) {
-    let donatePlattform = row[DONATE_PLATTFORM].split(',').map(g => g.trim())
-    return donatePlattform.includes('Betterplace') ||
-      donatePlattform.includes('Altruja')
-  }
+  // 2.
+  // if (Object.keys(row).includes(DONATE_PLATTFORM)) {
+  //   console.log(DONATE_PLATTFORM)
+  //   let donatePlattform = row[DONATE_PLATTFORM].split(',').map(g => g.trim())
+  //   return donatePlattform.includes('Betterplace') ||
+  //     donatePlattform.includes('Altruja')
+  // }
 
-  return false
+  // 3.
+  return true
 }
 
 // console.log(process.argv[2])
