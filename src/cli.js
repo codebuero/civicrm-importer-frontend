@@ -911,69 +911,7 @@ async function addEftContributions(contactId, contributions) {
   return true
 }
 
-async function main(contactFileLocation = null, betterplaceFileLocation = null, altrujaFileLocation = null, eftFileLocation = null, dry) {
-  await getPrefixes()
-
-  console.log('found existing Prefixes')
-  console.log(PREFIXES)
-
-  if (contactFileLocation) {
-    const workbook = XLSX.readFile(contactFileLocation)
-    const rawSheet = workbook.Sheets[workbook.SheetNames[0]]
-    const jsonSheet = XLSX.utils.sheet_to_json(rawSheet)
-
-    console.log('Anzahl aller Kontakteinträge: ', jsonSheet.length)
-    const filteredEntries = jsonSheet.filter(jobRowPressFilterRoutine)
-    console.log('Anzahl gefilterter Einträge : ' + filteredEntries.length)
-
-    if (!dry) {
-      for (let row of filteredEntries) {
-        await jobRowMainRoutine(row)
-      }
-    }
-  }
-
-  if (betterplaceFileLocation) {
-    let accounts = await getEntitiesBy({ entity: 'contact', tag: 7 })
-    const emails = await getEntitiesBy({ entity: 'email' })
-    accounts = enhancedContactsWithEmails(accounts, emails)
-
-    const statements = await parseCsvFile(betterplaceFileLocation)
-    accounts = enhanceContactsWithFoundContributions(accounts, statements, 'betterplace')
-
-    console.log(accounts)
-
-    if (!dry) {
-      for (let id in accounts) {
-        await addBetterplaceContributions(id, accounts[id]['contributions'])
-      }
-    }
-  }
-
-  if (altrujaFileLocation) {
-    let accounts = await getEntitiesBy({ entity: 'contact', tag: 6 })
-    const emails = await getEntitiesBy({ entity: 'email' })
-    accounts = enhancedContactsWithEmails(accounts, emails)
-
-    const rawStatements = await parseCsvFile(altrujaFileLocation)
-    const statements = rawStatements.filter(s => !['SMS', 'Offline-Spende'].includes(s['Quelle']))
-
-    accounts = enhanceContactsWithFoundContributions(accounts, statements, 'altruja')
-
-    let statementsOnAccount = 0
-    if (!dry) {
-      for (let id in accounts) {
-        statementsOnAccount += accounts[id]['contributions'].length
-        await addAltrujaContributions(id, accounts[id]['contributions'])
-
-      }
-    }
-    console.log('canceld Altruja Payments', canceldPayments.length)
-    console.log(canceldPayments)
-    console.log('Amount Statements added to Contacts', statementsOnAccount)
-    console.log('Amount Statements Altruja: ', statements.length)
-  }
-
+async function main(eftFileLocation = null, dry) {
   if (eftFileLocation) {
 
     const accountsWithIban = await getAllContactsWithIban()
@@ -1013,8 +951,70 @@ async function main(contactFileLocation = null, betterplaceFileLocation = null, 
     console.log('Amount Statements EFT: ', statements.length)
 
   }
-
 }
+
+async contacts(contactFileLocation, dry = false) {
+  await getPrefixes()
+
+  console.log('found existing Prefixes')
+  console.log(PREFIXES)
+
+  const workbook = XLSX.readFile(contactFileLocation)
+  const rawSheet = workbook.Sheets[workbook.SheetNames[0]]
+  const jsonSheet = XLSX.utils.sheet_to_json(rawSheet)
+
+  console.log('Anzahl aller Kontakteinträge: ', jsonSheet.length)
+  const filteredEntries = jsonSheet.filter(jobRowPressFilterRoutine)
+  console.log('Anzahl gefilterter Einträge : ' + filteredEntries.length)
+
+  if (!dry) {
+    for (let row of filteredEntries) {
+      await jobRowMainRoutine(row)
+    }
+  }
+}
+
+async betterplace(betterplaceFileLocation, dry) {
+  let accounts = await getEntitiesBy({ entity: 'contact', tag: 7 })
+  const emails = await getEntitiesBy({ entity: 'email' })
+  accounts = enhancedContactsWithEmails(accounts, emails)
+
+  const statements = await parseCsvFile(betterplaceFileLocation)
+  accounts = enhanceContactsWithFoundContributions(accounts, statements, 'betterplace')
+
+  console.log(accounts)
+
+  if (!dry) {
+    for (let id in accounts) {
+      await addBetterplaceContributions(id, accounts[id]['contributions'])
+    }
+  }
+}
+
+async altruja(altrujaFileLocation, dry) {
+  let accounts = await getEntitiesBy({ entity: 'contact', tag: 6 })
+  const emails = await getEntitiesBy({ entity: 'email' })
+  accounts = enhancedContactsWithEmails(accounts, emails)
+
+  const rawStatements = await parseCsvFile(altrujaFileLocation)
+  const statements = rawStatements.filter(s => !['SMS', 'Offline-Spende'].includes(s['Quelle']))
+
+  accounts = enhanceContactsWithFoundContributions(accounts, statements, 'altruja')
+
+  let statementsOnAccount = 0
+  if (!dry) {
+    for (let id in accounts) {
+      statementsOnAccount += accounts[id]['contributions'].length
+      await addAltrujaContributions(id, accounts[id]['contributions'])
+
+    }
+  }
+  console.log('canceld Altruja Payments', canceldPayments.length)
+  console.log(canceldPayments)
+  console.log('Amount Statements added to Contacts', statementsOnAccount)
+  console.log('Amount Statements Altruja: ', statements.length)
+}
+
 
 program
   .version('0.1.0')
@@ -1025,4 +1025,18 @@ program
   .option('-d, --dry', 'dry run file analysis', false)
   .parse(process.argv)
 
-main(program.contacts, program.betterplace, program.altruja, program.eft, program.dry)
+
+if (program.contacts) {
+  return contacts(program.contacts, program.dry)
+}
+
+if (program.betterplace) {
+  return betterplace(program.betterplace, program.dry)
+}
+
+if (program.altruja) {
+  return altruja(program.altruja, program.dry)
+}
+
+main(program.eft, program.dry)
+
