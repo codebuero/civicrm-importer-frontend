@@ -832,6 +832,8 @@ async function addBetterplaceContributions(contactId, contributions) {
   return
 }
 
+const canceldPayments = []
+
 function parseInstrument(contribution){
   const source = contribution['Quelle']
   const sourceIdMap = {
@@ -929,14 +931,86 @@ async function main(contactFileLocation = null, betterplaceFileLocation = null, 
   }
 
   if (betterplaceFileLocation) {
-    const accounts = await getEntitiesBy({ entity: 'contact', tag: 7 })
-    console.log(Object.keys(accounts).length)
+    let accounts = await getEntitiesBy({ entity: 'contact', tag: 7 })
+    const emails = await getEntitiesBy({ entity: 'email' })
+    accounts = enhancedContactsWithEmails(accounts, emails)
+
+    const statements = await parseCsvFile(betterplaceFileLocation)
+    accounts = enhanceContactsWithFoundContributions(accounts, statements, 'betterplace')
+
+    console.log(accounts)
+
+    if (!dry) {
+      for (let id in accounts) {
+        await addBetterplaceContributions(id, accounts[id]['contributions'])
+      }
+    }
   }
 
   if (altrujaFileLocation) {
-    const accounts = await getEntitiesBy({ entity: 'contact', tag: 6 })
-    console.log(Object.keys(accounts).length)
+    let accounts = await getEntitiesBy({ entity: 'contact', tag: 6 })
+    const emails = await getEntitiesBy({ entity: 'email' })
+    accounts = enhancedContactsWithEmails(accounts, emails)
+
+    const rawStatements = await parseCsvFile(altrujaFileLocation)
+    const statements = rawStatements.filter(s => !['SMS', 'Offline-Spende'].includes(s['Quelle']))
+
+    accounts = enhanceContactsWithFoundContributions(accounts, statements, 'altruja')
+
+    let statementsOnAccount = 0
+    if (!dry) {
+      for (let id in accounts) {
+        statementsOnAccount += accounts[id]['contributions'].length
+        await addAltrujaContributions(id, accounts[id]['contributions'])
+
+      }
+    }
+    console.log('canceld Altruja Payments', canceldPayments.length)
+    console.log(canceldPayments)
+    console.log('Amount Statements added to Contacts', statementsOnAccount)
+    console.log('Amount Statements Altruja: ', statements.length)
   }
+
+  if (eftFileLocation) {
+
+    const accountsWithIban = await getAllContactsWithIban()
+
+    function contactMapper(contact) {
+      let o = {}
+      if (contact.id) {
+        o.id = contact.id
+      }
+      if (contact['api.CustomValue.get'] &&
+          contact['api.CustomValue.get'].count &&
+          contact['api.CustomValue.get'].values &&
+          contact['api.CustomValue.get'].values.findIndex(v => v["id"] === "1") > -1) {
+        o.iban = contact['api.CustomValue.get'].values.filter(v => v["id"] === "1")[0]["0"]
+        o.bic = contact['api.CustomValue.get'].values.filter(v => v["id"] === "2")[0]["0"]
+      }
+      return o
+    }
+
+    const contactIdIban = accountsWithIban.map(contactMapper).filter(ac => ac.iban)
+
+    const statements = await parseCsvFile(eftFileLocation)
+
+    const accounts = enhanceContactsWithFoundContributions(contactIdIban, statements, 'eft')
+
+    let statementsOnAccount = 0
+    if (!dry) {
+      for (let ac of accounts) {
+        statementsOnAccount += ac.contributions.length
+        await addEftContributions(ac.id, ac.contributions)
+      }
+    }
+
+    // console.log('canceld Altruja Payments', canceldPayments.length)
+    // console.log(canceldPayments)
+    console.log('Amount Statements added to Contacts', statementsOnAccount)
+    console.log('Amount Statements EFT: ', statements.length)
+
+  }
+
 }
 
 program
