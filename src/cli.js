@@ -4,7 +4,11 @@ const XLSX = require('xlsx')
 const { Set } = require('immutable')
 const _ = require('lodash')
 const RestClient = require('./rest')
-const program = require('commander');
+const program = require('commander')
+const CSVParser = require('csvparser')
+const fs = require('fs')
+const util = require('util')
+const moment = require('moment')
 
 const ExcelCiviCrmKeyMap = require('./excel_civicrm_keymap')
 
