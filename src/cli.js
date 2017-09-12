@@ -824,6 +824,29 @@ function enhanceContactsWithFoundContributions(accounts, statements, processor) 
 
   return accounts
 }
+function parseInstrument(contribution){
+  const source = contribution['Quelle']
+  const sourceIdMap = {
+    'Online (Wirecard/Kreditkarte)': 10,
+    'Online (Wirecard/Lastschrift)': 9,
+    'direkt / PayPal': 8,
+    'Soforüberweisung': 7,
+    'Offline-Spende': 3,
+  }
+  return sourceIdMap[source]
+}
+
+function parseFinancialType(contribution){
+  const type = contribution['Spenden-Typ']
+
+  const typeIdMap = {
+    'Einzelspende': 1,
+    'Dauererstspende': 5,
+    'Dauerfolgespende': 5,
+  }
+
+  return typeIdMap[type]
+}
 async function main(contactFileLocation = null, betterplaceFileLocation = null, altrujaFileLocation = null, eftFileLocation = null, dry) {
   await getPrefixes()
 
