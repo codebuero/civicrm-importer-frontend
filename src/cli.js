@@ -130,6 +130,28 @@ async function getPrefixes() {
   return
 }
 
+async function getAllContactsWithIban() {
+  let val = []
+
+  let range = _.range(0, 5500, 500)
+
+  for (let i of range) {
+    const q = {
+      entity: 'contact',
+      json: `{"sequential":1,"api.CustomValue.get":{}}`,
+      'options[offset]': i
+    }
+    const values = await getEntitiesBy(q)
+    if (values) {
+      val = val.concat(values)
+    }
+  }
+  //
+  console.log(val)
+  console.log(`retrieved ${val.length} accounts`)
+  return val
+}
+
 async function getEntitiesBy(query) {
   const req = new RestClient()
   const baseQuery = {
