@@ -222,9 +222,8 @@ async function createHouseholdContact(contact) {
 }
 
 async function createIndividualContact(contact, employerId = null, householdId = null, memberId = null) {
-  console.log('creating Individual contactId:', contact[ID])
   let prefixId = await calculatePrefixId(contact)
-  console.log('prefix_id', prefixId)
+  console.log('creating Individual contactId:', contact[ID],' with prefix id', prefixId)
 
   const extId = (memberId) ? `${contact[ID]}_${memberId}` : contact[ID]
 
