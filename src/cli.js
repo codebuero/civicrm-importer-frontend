@@ -559,6 +559,29 @@ async function createTag(contactId, tagId) {
   await req.createEntity('entity_tag', q)
 }
 
+const GROUP_IDS = {
+  'Pressevertreter*innen_BPK': 3,
+  'Presseverteiler Englisch': 4,
+  'Presseverteiler Deutsch': 5,
+  'Presseverteiler Institutionen': 6,
+  'Verteiler Seenotrettung': 7,
+  'Ordentliches Mitglied': 8,
+  'Vorstand': 9,
+}
+
+const TAG_IDS = {
+  'Altruja': 6,
+  'Betterplace': 7,
+  'Interessent*in': 8,
+  'Unterstützer*in': 9,
+  'Newsletter Deutsch': 10,
+  'Newsletter Englisch': 11,
+  'Monatsrückblick': 12,
+  'Feldmitarbeiter*in': 13,
+  'Fördermitglied': 14,
+  'Dienstleister*in': 15,
+  'Volunteer': 9,
+}
 
 async function createGroupsAndTags(contactId, contact) {
   console.log('creating group membership external ContactId - internal ContactId:', contact[ID], ' - ', contactId)
