@@ -40,6 +40,7 @@
     "compression": "^1.6.2",
     "cors": "^2.8.3",
     "csvparser": "^0.1.4",
+    "csvwriter": "^1.3.0",
     "dauria": "^2.0.0",
     "director": "^1.2.8",
     "ejs": "^2.5.6",
