@@ -58,6 +58,18 @@ const LANGUAGE_CODES = {
   'Niederlanden': 'nl_NL',
 }
 
+const GROUP_IDS = {
+  'Pressevertreter*innen_BPK': 3,
+  'Presseverteiler Englisch': 4,
+  'Presseverteiler Deutsch': 5,
+  'Presseverteiler Institutionen': 6,
+  'Verteiler Seenotrettung': 7,
+  'Ordentliches Mitglied': 8,
+  'Vorstand': 9,
+}
+
+const TAG_IDS = {}
+
 async function createInstitutionContact(contact, noExternalId = false) {
   console.log('creating Organization contactId:', contact[ID])
 
@@ -127,6 +139,19 @@ async function getPrefixes() {
       PREFIXES[res.body.values[v].name] = res.body.values[v].value
     }
   }
+  return
+}
+
+async function getTags() {
+  const req = new RestClient()
+  const res = await req.getEntity('tag')
+
+  if (res.body.count && res.body.count > 0 && res.body.values) {
+    for (const v of Object.values(res.body.values)) {
+      TAG_IDS[v.name] = v.id
+    }
+  }
+
   return
 }
 
