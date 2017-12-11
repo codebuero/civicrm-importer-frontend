@@ -131,7 +131,7 @@ async function getPrefixes() {
   const req = new RestClient()
   const q = {
     option_group_id: 6,
-    'options[limit]': 200,
+    'options[limit]': MAXIMUM_RESULTS,
   }
   const res = await req.getEntity('option_value', q)
   if (res.body.count && res.body.count > 0 && res.body.values) {
@@ -180,7 +180,7 @@ async function getAllContactsWithIban() {
 async function getEntitiesBy(query) {
   const req = new RestClient()
   const baseQuery = {
-    'options[limit]': 5000,
+    'options[limit]': MAXIMUM_RESULTS,
   }
 
   const { entity } = query
