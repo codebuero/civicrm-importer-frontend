@@ -12,6 +12,8 @@ const DONATE_PLATTFORM = 'Spendenplattform'
 const PHONE_WORK = 'Telefon berufl.'
 const MOBILE_HOME = 'Mobilnummer'
 const PHONE_HOME = 'Telefon privat'
+const FAX = 'Fax'
+const WEBSITE = 'Website'
 const POSTCODE = 'Adresse - PLZ'
 const CITY = 'Adresse - Ort'
 const STREET = 'Adresse - Straße'
@@ -40,6 +42,8 @@ module.exports = {
    PHONE_WORK,
    MOBILE_HOME,
    PHONE_HOME,
+   FAX,
+   WEBSITE,
    POSTCODE,
    CITY,
    STREET,
