@@ -259,7 +259,11 @@ async function createIndividualContact(contact, employerId = null, householdId =
   let prefixId = await calculatePrefixId(contact)
   console.log('creating Individual contactId:', contact[ID],' with prefix id', prefixId)
 
-  const extId = (memberId) ? `${contact[ID]}_${memberId}` : contact[ID]
+  let extId = ''
+
+  if (contact[ID]) {
+    extId = (memberId) ? `${contact[ID]}_${memberId}` : contact[ID]
+  }
 
   let query = {
     contact_type: 'Individual',
@@ -415,9 +419,14 @@ async function createAddress(id, contact, workPlace = false) {
 
   const countryCode = countryCodes[contact[COUNTRY]] || '1082'
 
+  const processPostCode = function(postCode = '') {
+    const _p = `${postCode}`.trim()
+    return (postCode.length < 5) ? `0${postCode}` : postCode
+  }
+
   const addressQuery = {
     contact_id: id,
-    postal_code: contact[POSTCODE],
+    postal_code: processPostCode(contact[POSTCODE]),
     city: contact[CITY],
     street_address: contact[STREET],
     country_id: countryCode,
@@ -603,30 +612,6 @@ async function createTag(contactId, tagId) {
   await req.createEntity('entity_tag', q)
 }
 
-const GROUP_IDS = {
-  'Pressevertreter*innen_BPK': 3,
-  'Presseverteiler Englisch': 4,
-  'Presseverteiler Deutsch': 5,
-  'Presseverteiler Institutionen': 6,
-  'Verteiler Seenotrettung': 7,
-  'Ordentliches Mitglied': 8,
-  'Vorstand': 9,
-}
-
-const TAG_IDS = {
-  'Altruja': 6,
-  'Betterplace': 7,
-  'Interessent*in': 8,
-  'Unterstützer*in': 9,
-  'Newsletter Deutsch': 10,
-  'Newsletter Englisch': 11,
-  'Monatsrückblick': 12,
-  'Feldmitarbeiter*in': 13,
-  'Fördermitglied': 14,
-  'Dienstleister*in': 15,
-  'Volunteer': 9,
-}
-
 function parseGroupsField(contactId, contact) {
   let groupsAndTags = _.compact([contact[GROUP],contact[TAG],contact[MEMBER],contact[DONATE_PLATTFORM]])
   let groups = []
@@ -684,66 +669,81 @@ async function checkForContactExistence(id) {
   return false
 }
 
-async function jobRowMainRoutine(row) {
+async function processRow(row) {
   let queries = []
   let contactId
   let employerId
   let householdId
 
-  const userExists = await checkForContactExistence(row[ID])
+  if (row[ORGA] && !row[FIRST] && !row[LAST]) {
+    contactId = await createInstitutionContact(row)
+    employerId = contactId
+  }
+  if (row[ORGA] && row[FIRST] && row[LAST] &&
+      (!row[FIRST].includes('+') && !row[LAST].includes('+'))) {
+    contactId = await createInstitutionContact(row, true)
+    employerId = contactId
+    //contactId = await createIndividualContact(row, contactId)
+    await createIndividualContact(row, employerId)
+  }
 
-  if (!userExists) {
-    if (row[ORGA] && !row[FIRST] && !row[LAST]) {
-      contactId = await createInstitutionContact(row)
+  if (!row[ORGA] && row[FIRST] && row[LAST] &&
+     (row[FIRST].split('+').length > 1 || row[LAST].split('+').length > 1)) {
+     householdId = await parseHouseholdContact(row)
+  }
+
+  if (!row[ORGA] && row[FIRST] && row[LAST] &&
+     (!row[FIRST].includes('+') && !row[LAST].includes('+'))) {
+     contactId = await createIndividualContact(row)
+  }
+
+  const id = contactId || householdId
+
+  if (row[EMAIL_WORK] || row[EMAIL_HOME]) {
+    await createEmails(id, row, employerId)
+  }
+
+  if (row[PHONE_WORK] || row[MOBILE_HOME] || row[PHONE_HOME] || row[FAX]) {
+    await createPhones(id, row)
+  }
+
+  if (row[WEBSITE]) {
+    await createWebsite(id, row)
+  }
+
+  if (row[POSTCODE] || row[STREET] || row[CITY] || row[COUNTRY]) {
+    await createAddress(id, row, employerId)
+  }
+
+  if (row[IBAN] || row[BIC]) {
+    await createBankAccount(id, row)
+  }
+
+  if (row[SOURCE]) {
+    await createContactGeneratedBy(id, row)
+  }
+
+  if (row[GROUP] || row[TAG] || row[MEMBER] || row[DONATE_PLATTFORM]) {
+    await createGroupsAndTags(id, row)
+  }
+
+  console.log(`finished extern: ${row[ID] || 'No externalId set'} - intern: ${id}`)
+  console.log(`${row[ORGA] || 'No organisation set'} -  ${row[FIRST]} - ${row[LAST]}`)
+  return
+}
+
+async function jobRowMainRoutine(row) {
+  if (row[ID]) {
+    const userExists = await checkForContactExistence(row[ID])
+
+    if (!userExists) {
+      await processRow(row)
+    } else {
+      console.log('User existiert bereits: ', row[ID])
     }
-    if (row[ORGA] && row[FIRST] && row[LAST] &&
-        (!row[FIRST].includes('+') && !row[LAST].includes('+'))) {
-      employerId = await createInstitutionContact(row, true)
-
-      contactId = await createIndividualContact(row, employerId)
-    }
-
-    if (!row[ORGA] && row[FIRST] && row[LAST] &&
-       (row[FIRST].split('+').length > 1 || row[LAST].split('+').length > 1)) {
-       householdId = await parseHouseholdContact(row)
-    }
-
-    if (!row[ORGA] && row[FIRST] && row[LAST] &&
-       (!row[FIRST].includes('+') && !row[LAST].includes('+'))) {
-       contactId = await createIndividualContact(row)
-    }
-
-    const id = contactId || householdId
-
-    if (row[EMAIL_WORK] || row[EMAIL_HOME]) {
-      await createEmails(id, row, employerId)
-    }
-
-    if (row[PHONE_WORK] || row[MOBILE_HOME] || row[PHONE_HOME]) {
-      await createPhones(id, row)
-    }
-
-    if (row[POSTCODE] || row[STREET] || row[CITY] || row[COUNTRY]) {
-      await createAddress(id, row, employerId)
-    }
-
-  //  if ((row[IBAN] || row[BIC]) && row[ACCOUNT_DATA_OK])  {
-    if (row[IBAN] || row[BIC]) {
-      await createBankAccount(id, row)
-    }
-
-    if (row[SOURCE]) {
-      await createContactGeneratedBy(id, row)
-    }
-
-    if (row[GROUP] || row[TAG] || row[MEMBER] || row[DONATE_PLATTFORM]) {
-      await createGroupsAndTags(id, row)
-    }
-
-    console.log(`finished extern: ${row[ID]} - intern: ${id}`)
-    console.log(row[ORGA] + ' - ' + row[FIRST] + ' ' + row[LAST])
   } else {
-    console.log('User existiert bereits: ', row[ID])
+    console.log('User has no external Id set, proceeding creation')
+    await processRow(row)
   }
   return
 }
@@ -808,7 +808,7 @@ const BETTERPLACE_MAIL = 'E-Mail'
 const ALTRUJA_MAIL = 'Email'
 const EFT_WHEN = 'Valutadatum'
 const EFT_AMOUNT = 'Betrag'
-
+const EFT_TYPE = 'Spendentyp'
 
 function enhanceContactsWithFoundContributions(accounts, statements, processor) {
   let unprocessedStatements = _.clone(statements)
@@ -952,10 +952,10 @@ async function addEftContributions(contactId, contributions) {
   const req = new RestClient()
 
   for (const con of contributions) {
-    const receiveDate = moment(con[EFT_WHEN], 'MM/DD/YY').format()
+    const receiveDate = moment(con[EFT_WHEN], 'DD.MM.YYYY').format()
     const q = {
       contact_id: contactId,
-      financial_type_id: 1,
+      financial_type_id: con[EFT_TYPE] || 1,
       payment_instrument_id: 5,
       receive_date: receiveDate,
       total_amount: con[EFT_AMOUNT],
@@ -1012,8 +1012,9 @@ async function eft(eftFileLocation = null, dry) {
   }
 }
 
-async contacts(contactFileLocation, dry = false) {
+async function contacts(contactFileLocation, dry = false) {
   await getPrefixes()
+  await getTags()
 
   console.log('found existing Prefixes')
   console.log(PREFIXES)
@@ -1033,7 +1034,7 @@ async contacts(contactFileLocation, dry = false) {
   }
 }
 
-async betterplace(betterplaceFileLocation, dry) {
+async function betterplace(betterplaceFileLocation, dry) {
   let accounts = await getEntitiesBy({ entity: 'contact', tag: 7 })
   const emails = await getEntitiesBy({ entity: 'email' })
   accounts = enhancedContactsWithEmails(accounts, emails)
@@ -1050,7 +1051,212 @@ async betterplace(betterplaceFileLocation, dry) {
   }
 }
 
-async altruja(altrujaFileLocation, dry) {
+async function missingBetterplace(betterplaceStatements) {
+  const emailEntities = await getEntitiesBy({ entity: 'email' })
+  const allEmails = _.values(emailEntities).map(ee => ee.email.toLowerCase())
+  const statements = await parseCsvFile(betterplaceStatements)
+
+  console.log('Amount Statements found: ', statements.length)
+  const leftStatements = statements.filter(s => !allEmails.includes(s['E-Mail'].toLowerCase()))
+                                   .filter(s => s['Vorname'] !== 'Vorname')
+  console.log(leftStatements)
+  console.log('Number of unfound Emailaddress: ',leftStatements.length)
+}
+
+async function missingAltruja(altrujaStatements, statistics) {
+  const altrujaContributions = await getEntitiesBy({ entity: 'contribution', json: '{"sequential":1,"source":"Altruja"}'})
+  const existingTrxIds = altrujaContributions.map(ac => parseInt(ac.trxn_id))
+
+  const statements = await parseCsvFile(altrujaStatements)
+
+  const condition = s => { return ['SMS','Offline-Spende'].includes(s['Quelle']) || !existingTrxIds.includes(s['Spenden-ID']) || !['durchgefuehrt'].includes(s['Altruja Status'])}
+
+  const leftStatements = statements.filter(condition)
+
+  const csvOutput = await formatToCSVOutput(leftStatements)
+
+  console.log(csvOutput)
+
+  if (statistics) {
+    console.log('Amount Altruja Contributions in Civi: ', existingTrxIds.length)
+    console.log('Amount Statements found: ', statements.length)
+    console.log('Number of unfound Contributions: ',leftStatements.length)
+  }
+}
+
+function createHashFromString(stringToHash) {
+  const md5sum = crypto.createHash('md5')
+  md5sum.update(stringToHash)
+  return md5sum.digest('hex')
+}
+
+async function calculateMissingEft(completesFile, foundsfile) {
+  const completeStatements = await parseCsvFile(completesFile)
+  const foundStatements = await parseCsvFile(foundsfile)
+
+  const m = []
+
+  const foundStatementsHash = []
+  const completeStatementsHash = []
+
+  function foundAttrToHash(fstate) {
+    const o = `${fstate.iban}${fstate.currency}${fstate.total_amount}${moment(fstate.receive_date).format('DDMMYYYY')}`
+    return o
+  }
+
+  foundStatements.forEach(fstate => {
+    const s =  foundAttrToHash(fstate)
+    //console.log(s)
+    foundStatementsHash.push(s)
+  })
+
+  function completeAttrToHash(cstate) {
+    let nn = parseDecimalNumber('' + cstate['Betrag'], {thousands:'',decimal:','})
+    let complete = true
+    if (!cstate['Kontonummer'] || !cstate['Waehrung'] || !nn) {
+      complete = false
+    }
+
+    const o = `${cstate['Kontonummer']}${cstate['Waehrung']}${nn}${moment(cstate['Valutadatum'], 'MM/DD/YY').format('DDMMYYYY')}`
+    return {
+      o,
+      complete
+    }
+  }
+
+  completeStatements.forEach(cstate => {
+    const { o, complete } =  completeAttrToHash(cstate)
+    //console.log(o)
+    if (!complete) {
+      m.push(cstate)
+    } else {
+      if (!foundStatementsHash.includes(o)) {
+        m.push(cstate)
+      }
+    }
+  })
+
+  const c = completeStatementsHash
+
+  const f = foundStatementsHash
+
+  console.log('amount complete statements', completeStatements.length)
+  console.log('amount found statements', foundStatements.length)
+  console.log('amount complete statement hashs ', c.length)
+  console.log('amount found statement hashs ', f.length)
+
+  console.log('already incomplete statements', m.length)
+
+  csvwriter(m,{delimiter: ';'}, (err, csv) => fs.writeFileSync('missing_eft.csv', csv))
+
+}
+
+async function missingEft(eftStatements, statements, dry) {
+  const CUSTOM_KEY = 'api.CustomValue.get'
+  const CONTRIB_KEY = 'api.Contribution.get'
+
+  const eftContributions = await getEntitiesBy({ entity: 'contribution', json: '{"sequential":1,"source":"Überweisung"}'})
+
+  let contributionsWithContactAndIban = []
+
+  for (let i = 0; i < eftContributions.length; i++ ) {
+    let contrib = eftContributions[i]
+
+    let contactPayload = {
+      entity: 'contact',
+      id: contrib['contact_id'],
+      json: '{"sequential":1,"api.CustomValue.get":{}}'
+    }
+    let contact = await getEntitiesBy(contactPayload)
+
+    console.log('retrieving contact', contrib['contact_id'])
+
+    if (contact[0]) {
+      contributionsWithContactAndIban.push({
+        contactId: contrib['contact_id'],
+        iban: contact[0][CUSTOM_KEY].values.filter(customValue => customValue.id === '1')[0]['0'],
+        total_amount: contrib['total_amount'],
+        receive_date: contrib['receive_date'],
+        contribution_id: contrib['contribution_id'],
+        currency: contrib['currency'],
+        financial_type: contrib['financial_type'],
+        payment_instrument: contrib['payment_instrument'],
+      })
+    } else {
+      console.log('no contact found for contribution', contrib.id)
+    }
+  }
+//  const contacts = await getEntitiesBy({ entity: 'contact', json: '{"sequential":1,"api.Contribution.get":{},"api.CustomValue.get":{}}'})
+
+  // const eftFilter = con => con.contribution_source === 'Überweisung'
+
+  // const contactFilter = c => {
+  //   return c[CONTRIB_KEY].count > 0 &&
+  //   c[CONTRIB_KEY].values.filter(eftFilter).length > 0 &&
+  //   c[CUSTOM_KEY].count > 0 &&
+  //   c[CUSTOM_KEY].values.filter(customValue => customValue.id === '1').length > 0
+  // }
+
+  // const contributionMapper = contact => {
+  //   const o = Object.create(null)
+
+  //   o.contactId = contact.contact_id
+  //   o.contributions = contact[CONTRIB_KEY].values.filter(eftFilter)
+  //   o.iban = contact[CUSTOM_KEY].values.filter(customValue => customValue.id === '1')[0]['0']
+  //   return o
+  // }
+
+
+  // const contactsWithContributions = contacts.filter(contactFilter)
+  //                                           .map(contributionMapper)
+
+  // console.log('contacts total',contacts.length)
+  // console.log('contactsWithContributions',contactsWithContributions.length)
+  // let contributionCount = 0
+  // contactsWithContributions.forEach(cc => contributionCount += cc.contributions.length)
+  // console.log('contributionCount on contacts', contributionCount)
+  // console.log('eftContributions total',eftContributions.length)
+  // console.log('group by contact id', Object.keys(_.groupBy(eftContributions, 'contact_id')).length)
+  // const contactIdsOnContributions = Object.keys(_.groupBy(eftContributions, 'contact_id'))
+  // const contactIdsWithContributions = contactsWithContributions.map(cc => cc.contactId)
+
+  // const contributionsWithContactAndIban = []
+
+  // contactsWithContributions.forEach(c => {
+  //   const { contactId, iban } = c
+  //   c.contributions.forEach(con => {
+  //     const {
+  //       total_amount: amount,
+  //       receive_date: date,
+  //       contribution_id: contributionId,
+  //       currency,
+  //       financial_type: type,
+  //       payment_instrument: instrument,
+  //     } = con
+  //     contributionsWithContactAndIban.push({ contactId, iban, amount, currency, date, contributionId, type, instrument})
+  //   })
+  // })
+
+
+  // console.log('cIds @ both',_.intersection(contactIdsOnContributions, contactIdsWithContributions).length)
+  // console.log('cIds @ either or', _.xor(contactIdsOnContributions, contactIdsWithContributions).length)
+  // console.log('cIds @ either or', _.xor(contactIdsOnContributions, contactIdsWithContributions))
+
+  if (!dry) {
+    csvwriter(contributionsWithContactAndIban,{delimiter: ';'}, (err, csv) => fs.writeFileSync('found_eft_contributionwise.csv', csv))
+  }
+}
+
+async function formatToCSVOutput(json) {
+  return new Promise((resolve, reject) => {
+    csvwriter(json, (err, result) => {
+      if (err) return reject(err)
+      return resolve(result)
+    })
+  })
+}
+
+async function altruja(altrujaFileLocation, dry) {
   let accounts = await getEntitiesBy({ entity: 'contact', tag: 6 })
   const emails = await getEntitiesBy({ entity: 'email' })
   accounts = enhancedContactsWithEmails(accounts, emails)
@@ -1074,6 +1280,118 @@ async altruja(altrujaFileLocation, dry) {
   console.log('Amount Statements Altruja: ', statements.length)
 }
 
+async function calculatePeriodSupporter(fileLocation, dry) {
+  const bpFile = await parseCsvFile(fileLocation)
+
+  const periodSupporter = bpFile.filter(bpc => bpc['Einzelspende/Dauerspende'] === 'Dauerspende')
+  console.log(periodSupporter.length)
+
+  const contactServer = await getEntitiesBy({ entity: 'contact' })
+  const bpServer = await getEntitiesBy({ entity: 'contribution', json: '{"sequential":1,"source":"Betterplace"}'})
+
+  const betterplaceDonator = []
+
+  bpServer.forEach(bpc => {
+    let cId = bpc.contact_id
+    contact = contactServer[cId]
+    betterplaceDonator.push({ c: contact, d: bpc })
+  })
+
+  const donIds = []
+  const missingDonIds = []
+
+  for (let i = 0; i < periodSupporter.length; i++) {
+    let current = periodSupporter[i]
+    let existingDonation = betterplaceDonator.filter(b => {
+      return b.c.email === current['E-Mail'] &&
+        parseDecimalNumber('' + b.d.total_amount, {thousands:'',decimal:'.'})  === parseDecimalNumber('' + current['Spendenbetrag in Euro'], {thousands:'.',decimal:','}) &&
+        moment(b.d.receive_date).format('DD-MM-YYYY') === moment(current['Gespendet am']).format('DD-MM-YYYY')
+    })
+
+    if (existingDonation.length > 0) {
+      donIds.push(parseInt(existingDonation[0].d.id))
+    } else {
+      missingDonIds.push(current)
+    }
+  }
+
+  //inspect(donIds.join(','))
+  inspect(missingDonIds)
+  inspect(missingDonIds.length)
+}
+
+async function calculatePeriodSupporterEft(filelocation, dry) {
+  const eftFile = await parseCsvFile(filelocation)
+
+  const periodSupporter = eftFile.filter(bpc => bpc['Buchungstext'].toLowerCase() === 'DAUERAUFTRAG'.toLowerCase())
+  const unique = _.uniqBy(periodSupporter, ps => ps['Beguenstigter/Zahlungspflichtiger'].toLowerCase())
+
+
+  unique.forEach(ps => {
+    inspect(`${ps['Beguenstigter/Zahlungspflichtiger'].toLowerCase()},${ps['Kontonummer']}`)
+  })
+}
+
+async function checkForIbanExistence(iban) {
+  const rest = new RestClient()
+
+  const { body: { count, values} } = await rest.getEntity('contact', { json: JSON.stringify({ "sequential":1,"return":"id","custom_1": iban })})
+  if (count > 0) {
+    return values[0]['contact_id']
+  }
+  return false
+}
+
+const contributionKeys = [
+  '20.07.2016',
+  '31.08.2016',
+  '30.09.2016',
+  '04.11.2016',
+  '30.11.2016',
+  '30.12.2016',
+  '31.01.2017',
+  '28.02.2017',
+  '30.03.2017',
+  '28.04.2017',
+  '31.05.2017',
+  '30.06.2017',
+  '31.07.2017',
+  '31.08.2017'
+]
+
+async function importCollectedContributions(contactFilePath, schemeFilePath) {
+  try {
+    const eftFile = await parseCsvFile(contactFilePath)
+    const rest = new RestClient()
+
+    for (let i = 0; i < eftFile.length; i++) {
+      const entry = eftFile[i]
+      const iban = entry[IBAN]
+      const name = entry[LAST]
+      const contactId = await checkForIbanExistence(iban)
+      if (iban && contactId) {
+        const contributions = []
+        for (const date of contributionKeys) {
+          if (entry[date]) {
+            const contributionParams = {
+              [EFT_WHEN]: date,
+              [EFT_TYPE]: 5,
+              [EFT_AMOUNT]: entry[date]
+            }
+            contributions.push(contributionParams)
+          }
+        }
+        await addEftContributions(contactId, contributions)
+      } else {
+        console.log(`no contact found for IBAN ${iban}, NAME ${name}`)
+      }   
+    } 
+    return   
+
+  } catch (e) {
+    console.error(e)
+  }
+}
 
 program
   .version('0.1.0')
@@ -1082,10 +1400,17 @@ program
   .option('-b, --betterplace [loc]', 'file location for betterplace statements', '')
   .option('-e, --eft [loc]', 'file location for bank statements', '')
   .option('-d, --dry', 'dry run file analysis', false)
-  .option('-mb, --missingBetterplace', 'print out not imported betterplace cons', '')
-  .option('-ma, --missingAltruja', 'print out not imported altruja cons', '')
+  .option('-mb, --missingBetterplace [loc]', 'print out not imported betterplace cons', '')
+  .option('-ma, --missingAltruja [loc]', 'print out not imported altruja cons', '')
+  .option('-me, --missingEft [loc]', 'print out not imported eft cons', '')
+  .option('-s, --statistics', 'print further statistics', false)
+  .option('-c, --calculateMissingEft', 'calculate missing efts', false)
+  .option('-f, --foundEft [loc]', 'already persisted Eft', '')
+  .option('-cd, --calculatePeriodSupporter [loc]', 'find betterplace contributions that are period supporter', '')
+  .option('-ce, --calculatePeriodSupporterEft [loc]', 'find eft contributions that are period supporter', '')
+  .option('-cod, --importCollectedContributions [loc]', 'import collected contributions', '')
+  .option('-sch, --importScheme [loc]', 'path to the import scheme (mandatory)', '')
   .parse(process.argv)
-
 
 if (program.contacts) {
   return contacts(program.contacts, program.dry)
@@ -1101,4 +1426,33 @@ if (program.altruja) {
 
 if (program.eft) {
   return eft(program.eft, program.dry)
+}
+
+if (program.missingBetterplace) {
+  return missingBetterplace(program.missingBetterplace, program.statistics)
+}
+
+if (program.missingAltruja) {
+  return missingAltruja(program.missingAltruja, program.statistics)
+}
+
+// if (program.missingEft) {
+//   return missingEft(program.missingEft, program.statistics, program.dry)
+// }
+
+if (program.calculateMissingEft) {
+  console.log(program.missingEft, program.foundEft)
+  return calculateMissingEft(program.missingEft, program.foundEft)
+}
+
+if (program.calculatePeriodSupporter) {
+  return calculatePeriodSupporter(program.calculatePeriodSupporter, program.dry)
+}
+
+if (program.calculatePeriodSupporterEft) {
+  return calculatePeriodSupporterEft(program.calculatePeriodSupporterEft, program.dry)
+}
+
+if (program.importCollectedContributions) {
+  return importCollectedContributions(program.importCollectedContributions, program.importScheme)
 }
