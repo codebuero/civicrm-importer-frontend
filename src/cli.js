@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const XLSX = require('xlsx')
-const { Set } = require('immutable')
+const { OrderedSet } = require('immutable')
 const _ = require('lodash')
 const RestClient = require('./rest')
 const program = require('commander')
@@ -9,10 +9,17 @@ const CSVParser = require('csvparser')
 const fs = require('fs')
 const util = require('util')
 const moment = require('moment')
+const csvwriter = require('csvwriter')
+const crypto = require('crypto')
+const parseDecimalNumber = require('parse-decimal-number')
+
+const inspect = function(output) { console.log(util.inspect(output, false, null))}
 
 const ExcelCiviCrmKeyMap = require('./excel_civicrm_keymap')
 
 const DEFAULT_LANGUAGE = 'en_GB'
+
+const MAXIMUM_RESULTS = 6000
 
 const {
  ID,
@@ -29,6 +36,8 @@ const {
  PHONE_WORK,
  MOBILE_HOME,
  PHONE_HOME,
+ FAX,
+ WEBSITE,
  POSTCODE,
  CITY,
  STREET,
@@ -314,8 +323,22 @@ async function createEmails(id, contact, workFirst = false) {
   }
 }
 
+async function createWebsite(id, contact) {
+  console.log('creating website external ContactId - internal ContactId:', contact[ID], ' - ', id)
+  const req = new RestClient()
+  if (contact[WEBSITE]) {
+    let query = {
+      contact_id: id,
+      url: contact[WEBSITE],
+      website_type_id: 1,
+    }
+
+    await req.createEntity('website', query)
+  }
+}
+
 async function createPhones(id, contact, workFirst) {
-  console.log('creating phones external ContactId - internal ContactId:', contact[ID], ' - ', id)
+  console.log('creating phones/fax external ContactId - internal ContactId:', contact[ID], ' - ', id)
   const req = new RestClient()
   if (contact[PHONE_WORK]) {
     let workPhoneQuery = {
@@ -347,6 +370,17 @@ async function createPhones(id, contact, workFirst) {
     }
     homePhoneQuery = (!workFirst) ? { ...homePhoneQuery, ...{ is_primary: 1 } } : homePhoneQuery;
     await req.createEntity('phone', homePhoneQuery)
+  }
+
+  if (contact[FAX]) {
+    let faxQuery = {
+      contact_id: id,
+      phone: contact[FAX],
+      location_type_id: 2,
+      phone_type_id: 3,
+    }
+
+    await req.createEntity('phone', faxQuery)
   }
 }
 
