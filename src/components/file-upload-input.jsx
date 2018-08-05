@@ -21,12 +21,10 @@ export default class FileUploadInput extends React.Component {
 
     var fileAsBinaryString = '';
     const reader = new FileReader();
-
     reader.onabort = () => console.log('file reading was aborted');
     reader.onerror = () => console.log('file reading has failed');
     reader.onload = () => {
         fileAsBinaryString = reader.result;
-        console.log(fileAsBinaryString);
         this.setState((prevState, props) => {
           return {
             file,

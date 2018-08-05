@@ -1,0 +1,146 @@
+body
+  background #fff
+  height 100vh
+  width 100%
+  display flex
+  justify-content center
+  align-items start
+  font-family: Helvetica
+  font-size: 18px
+
+/* ------------------------- Separate line ------------------------- */
+
+:root
+  --breadcrumb-theme-1 #E91E63  // color | background active
+  --breadcrumb-theme-2 #FFFFFF  // background | color active
+  --breadcrumb-theme-3 #E91E63 - #111  // hover
+  --breadcrumb-theme-4 #111  // arrow
+
+header 
+  width 100%
+  text-transform uppercase
+  
+  h1
+    font-size 32px
+    text-align center
+
+.btn
+  width 100%
+  background #777
+  color #fff
+  box-shadow 0
+  border solid 0.25em #777
+  margin-top 4vh
+  
+  font-size 32px
+  
+  &:hover
+    background #fff
+    color #000
+    border solid 0.25em #000
+    
+  &:disabled
+    color #000
+    background #ccc
+    border solid 0.25em #ccc
+    
+    
+.container
+  width 100vh
+
+.dropzone-container
+  height 32vh
+  border dashed 0.5em #000
+  margin-top 4vh  
+  font-size 32px
+  text-align center
+
+.breadcrumb
+  text-align center
+  display inline-block
+  box-shadow 0 1px 2px rgba(0, 0, 0, 0.25)
+  overflow hidden
+  border-radius 5px
+  counter-reset flag
+  width: 100%
+
+  &__step
+    font-size 14px
+    text-decoration none
+    outline none
+    display block
+    float left
+    line-height 36px
+    padding 0 10px 0 60px
+    position relative
+    background var(--breadcrumb-theme-2)
+    color var(--breadcrumb-theme-1)
+    transition background .5s
+
+
+    &:first-child
+      padding-left 46px
+      border-radius 5px 0 0 5px
+      margin-left: 2.5em
+
+      &::before
+        left 14px
+
+    &:last-child
+      border-radius 0 5px 5px 0
+      padding-right 20px
+
+      &::after
+        content none
+
+    // circle
+    &::before
+      content counter(flag)
+      counter-increment flag
+      border-radius 100%
+      width 20px
+      height 20px
+      line-height 20px
+      margin 8px 0
+      position absolute
+      top 0
+      left 30px
+      font-weight bold
+      background var(--breadcrumb-theme-2)
+      box-shadow 0 0 0 1px var(--breadcrumb-theme-1)
+
+    // arrow
+    &::after
+      content ''
+      position absolute
+      top 0
+      right -18px
+      width 36px
+      height 36px
+      transform scale(0.707) rotate(45deg)
+      z-index 1
+      border-radius 0 5px 0 50px
+      background var(--breadcrumb-theme-2)
+      transition background 0.5s
+      box-shadow 2px -2px 0 2px var(--breadcrumb-theme-4)
+
+    &--active
+      color var(--breadcrumb-theme-2)
+      background var(--breadcrumb-theme-1)
+
+      &::before
+        color var(--breadcrumb-theme-1)
+
+      &::after
+        background var(--breadcrumb-theme-1)
+
+    &:hover
+      color var(--breadcrumb-theme-2)
+      background var(--breadcrumb-theme-3)
+
+      &::before
+        color var(--breadcrumb-theme-1)
+
+      &::after
+        color var(--breadcrumb-theme-1)
+        background var(--breadcrumb-theme-3)

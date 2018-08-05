@@ -6,7 +6,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node bin/index.js",
     "lint": "eslint src",
-    "cli": "node src/cli.js"
+    "cli": "node src/cli.js",
+    "watch": "webpack --watch"
   },
   "author": "andirotter",
   "license": "ISC",
@@ -24,12 +25,16 @@
     "babel-preset-stage-1": "^6.5.0",
     "babel-register": "^6.7.2",
     "body-parser": "^1.17.2",
-    "css-loader": "^0.28.0",
+    "civicrm": "https://github.com/TechToThePeople/node-civicrm.git",
+    "css-loader": "^0.28.11",
     "eslint-plugin-react": "^6.10.3",
+    "extract-text-webpack-plugin": "^2.1.2",
     "file-loader": "^0.11.1",
     "jquery": "^3.2.1",
     "react-hot-loader": "^2.0.0-alpha-4",
     "style-loader": "^0.16.1",
+    "stylus": "^0.54.5",
+    "stylus-loader": "^3.0.2",
     "webpack": "^2.3.2",
     "webpack-dev-middleware": "^1.6.1",
     "webpack-dev-server": "^2.4.2"
