@@ -4,43 +4,53 @@ import {observer} from 'mobx-react'
 import Dropzone from 'react-dropzone'
 import _ from 'lodash'
 import { Set } from 'immutable'
+import XLSX from 'xlsx'
 
 export default class FileUploadInput extends React.Component {
   static propTypes = {
-    next: PropTypes.func.isRequired,
+    selectFile: PropTypes.func.isRequired,
+    toggleNext: PropTypes.func.isRequired,
   }
 
   constructor(props) {
     super(props)
-    this.onDrop = this.onDrop.bind(this);
+    this.handleFile = this.handleFile.bind(this);
     this.state = { file: { name: '' } };
   }
 
-  onDrop(files) {
+  handleFile(files) {
+    this.props.toggleNext(false);
     const file = files[0];
 
-    var fileAsBinaryString = '';
     const reader = new FileReader();
-    reader.onabort = () => console.log('file reading was aborted');
-    reader.onerror = () => console.log('file reading has failed');
-    reader.onload = () => {
-        fileAsBinaryString = reader.result;
-        this.setState((prevState, props) => {
-          return {
-            file,
-            fileBinary: fileAsBinaryString
-          }
+    const isBinaryString = !!reader.readAsBinaryString
+    reader.onload = (e) => {
+        const bstr = e.target.result;
+        const options = {
+          type: isBinaryString ? 'binary' : 'array'
+        };
+        const workbook = XLSX.read(bstr, options);
+        const sheets = {};
+        workbook.SheetNames.forEach(name => {
+          sheets[name] = XLSX.utils.sheet_to_json(workbook.Sheets[name]);
         })
+        this.setState({
+          file
+        });
+        this.props.selectFile(file, sheets);
+        this.props.toggleNext(true);
     };
-    reader.readAsArrayBuffer(file);
+    reader.readAsBinaryString(file);
   }
 
   render() {
     return (
-      <section>
-        <div className="fileUpload--container">
-          <div className="fileUpload--dropzone">
-            <Dropzone onDrop={this.onDrop.bind(this)} className="dropzone-container">
+      <section className="upload content">
+            <Dropzone 
+              onDropAccepted={this.handleFile} 
+              className="dropzone-container"
+              accept="application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            >
               {!this.state.file.name && (<p>
                 <span>Drag'n'Drop File into Field</span><br />
                 <span>or</span><br />
@@ -49,9 +59,6 @@ export default class FileUploadInput extends React.Component {
               {this.state.file.name && 
                 (<p><span key={this.state.file.name}>{this.state.file.name} </span></p>)}
             </Dropzone>
-          </div>
-          <button className="btn" disabled={_.isEmpty(this.state.file) ? 'disabled' : ''} onClick={this.props.next}>Next Step</button>
-        </div>
       </section>
     );
   }

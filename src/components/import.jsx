@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 
 export default class Import extends React.Component {
   static propTypes = {
+    onStartImport: PropTypes.func.isRequired,
   }
   constructor(props) {
     super(props)
@@ -18,10 +19,9 @@ export default class Import extends React.Component {
   }
   render() {
     return (
-      <section>
-        <div className="fileUpload--container">
-          <button className="btn" onClick={this.startImport}>Start Import</button>
-        </div>
+      <section className="import content">
+        <progress className="progress" value="0" max="100">0</progress>
+        <button className="btn" onClick={this.props.onStartImport}>Begin Import</button>
       </section>
     );
   }
