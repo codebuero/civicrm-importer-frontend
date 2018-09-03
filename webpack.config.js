@@ -1,28 +1,47 @@
 var path = require('path')
 var webpack = require('webpack')
 var NODE_MODULES_PATH = path.resolve(__dirname, 'node_modules')
+var ExtractTextPlugin = require('extract-text-webpack-plugin')
 
 module.exports = {
   devtool: 'eval',
-  entry: [
-    './src/client.js'
-  ],
+  entry: ["babel-polyfill", "./src/client.js"],
   output: {
     path: path.join(__dirname, 'public/js'),
     filename: 'bundle.js',
-    publicPath: '/static/'
+    publicPath: '/static/',
+    libraryTarget: 'var',
+    library: 'XLSX',
   },
   plugins: [
     new webpack.NoEmitOnErrorsPlugin(),
+    new ExtractTextPlugin('styles.css'),
   ],
   resolve: {
     extensions: ['.js', '.jsx']
   },
   module: {
+    noParse: [
+      /xlsx.core.min.js/,
+      /xlsx.full.min.js/,
+    ],
     loaders: [{
-      test: /\.jsx?$/,
-      loaders: ['babel-loader'],
-      exclude: NODE_MODULES_PATH,
-    }]
+          test: /\.js|\.jsx?$/,
+          loader: 'babel-loader',
+          exclude: NODE_MODULES_PATH,
+        },
+        { 
+          test: /\.styl$/, 
+          loader: ExtractTextPlugin.extract({
+              fallbackLoader: 'style-loader',
+              loader: "css-loader!stylus-loader"
+          }) 
+        },
+        ]
+  },
+  node: {
+    fs: 'empty',
+    net: 'empty',
+    tls: 'empty'
   }
 }
