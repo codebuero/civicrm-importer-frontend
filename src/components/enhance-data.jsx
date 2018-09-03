@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types'
-import { rest } from './rest'
+import { rest } from '../services/rest'
 
 export default class EnhanceData extends React.Component {
   static propTypes = {
