@@ -5,13 +5,15 @@ import FileUploadInput from './file-upload-input'
 import SelectData from './select-data'
 import EnhanceData from './enhance-data'
 import Import from './import'
-import { rest } from './rest'
+import { rest } from '../services/rest'
+import ImporterService from '../services/importer'
 
 import styles from '../styles/style.styl'
 
 const FIRST_SELECTION = 'upload'
 
 const DEFAULT_STATE = {
+  apiAvailable: false,
   data: {
     rulesSet: { 
       altruja: { 
@@ -31,9 +33,8 @@ const DEFAULT_STATE = {
       }
     }
   },
-  civicrm: {
-    prefixes: []
-  },
+  prefixes: [],
+  countries: [],
   ui: {
     nextEnabled: false,
     selectedTopic: FIRST_SELECTION,
@@ -51,7 +52,8 @@ const DEFAULT_STATE = {
   importparameter: {
     data: [],
     selectedRuleSet: '',
-    selectedTags: []
+    selectedTags: [],
+    selectedGroup: 0,
   },
 };
 
@@ -74,13 +76,29 @@ export default class CiviCrmImporter extends React.Component {
   }
 
   componentDidMount() {
-    rest.fetchPrefixes(data => {
-      this.setState(state => ({
-        ...state,
-        civicrm: {
+    rest.testApi(apiState => {
+      if (!apiState) {
+        return this.setState({
+          apiAvailable: false
+        })
+      }
+
+      this.setState({
+        apiAvailable: true
+      })
+
+      rest.fetchPrefixes(data => {
+        this.setState({
           prefixes: data.values,
-        }
-      }))
+        })
+        rest.fetchCountries(data => {
+          this.setState({
+            countries: data.values,
+          })
+        })
+
+      })
+
     })
   }
 
@@ -152,7 +170,7 @@ export default class CiviCrmImporter extends React.Component {
       ...state,
       importparameter: {
         ...importparameter,
-        selectedGroup: groupId,
+        selectedGroup: parseInt(groupId, 10),
       }
     }))
   }
@@ -170,7 +188,17 @@ export default class CiviCrmImporter extends React.Component {
     this.setState(state => ({ ...state, ui: { enableNext: false, selectedTopic: 'select'}}))
   }
   startImport() {
-    console.log(this.state.importparameter);
+    const { data, selectedRuleSet, selectGroup, selectTags } = this.state.importparameter;
+    const importData = ImporterService.mapDataOnRuleset(data, selectedRuleSet);
+    // const enhancedData = ImporterService.addTagsAndGroups(importData, selectGroup, selectTags)
+  
+
+    // 1. map data array with rules to import data set
+    // 2. iterate over import set
+    // 2a. check if entity email exists
+    // 2b. if yes, abort account creation but create donation for this account
+    // 2c. if no, create account, email, address, phone and donation
+
   }
   render() {
     const { store } = this.props
@@ -182,6 +210,9 @@ export default class CiviCrmImporter extends React.Component {
             {this.state.header.topics.map(ht => (<a key={ht.key} onClick={() => this.onHeaderClick(ht.key)} className={`breadcrumb__step ${ht.key === this.state.ui.selectedTopic ? 'breadcrumb__step--active' : ''}`} href="#">{ht.value}</a>))}
           </div>
         </header>
+        {!this.state.apiAvailable && (<div className="notification is-danger warning">
+          No API available with this configuration
+        </div>)}
         {this.state.ui.selectedTopic === 'upload' && (
           <FileUploadInput 
             selectFile={this.selectFile}
