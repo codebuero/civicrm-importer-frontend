@@ -45,7 +45,7 @@ const ImportService = {
     if (selectedTags.length) {
       out = { 
         ...out,
-        tags: tagPayload(selectedTags),
+        entity_tag: tagPayload(selectedTags),
       }        
     }
 
@@ -85,13 +85,24 @@ const ImportService = {
         }
         // ['address','email','contribution','customValue', 'group']
 
-        for (const k of ['address','email','contribution','customValue', 'group_contact']) {
-          if (typeof account[k] !== 'function') continue;
-          const payloadWithContactId = account[k](id);
-          if (this._filterContent(k, payloadWithContactId)) {
-            const pRes = await rest.createEntity(k, payloadWithContactId)
-            if (pRes.is_error) return this.rejectWithEmail(account.email().email);
-          } 
+        for (const k of Array.from(['address','email','contribution','customValue', 'group_contact', 'entity_tag'])) {
+          if (Array.isArray(account[k])) {
+            const payloadsWithContactId = account[k].map(p => p(id))
+
+            for(let p of payloadsWithContactId) {
+              const pRes = await rest.createEntity(k, p)
+              if (pRes.is_error) return this.rejectWithEmail(account.email().email);
+            }
+            continue;
+          }
+
+          if (typeof account[k] === "function") {
+            const payloadWithContactId = account[k](id);
+            if (this._filterContent(k, payloadWithContactId)) {
+              const pRes = await rest.createEntity(k, payloadWithContactId)
+              if (pRes.is_error) return this.rejectWithEmail(account.email().email);
+            } 
+          }
         }
 
       } else {
