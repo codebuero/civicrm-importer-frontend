@@ -31,8 +31,6 @@ const ImportService = {
       return { ...row, CountryId: countryIds[row['Land']]}
   },
   _mapRowToRules: function(row, ruleSetTitle, groupId, selectedTags) {
-    const ruleSet = getPayloadRules(ruleSetTitle)
-    const keysToMatch = Object.keys(ruleSet);
     let out = {
       emailAddress: row['Email'],
     };
@@ -40,7 +38,7 @@ const ImportService = {
     if (groupId) {
       out = { 
         ...out,
-        group: groupPayload(groupId),
+        group_contact: groupPayload(groupId),
       }
     }
 
@@ -51,6 +49,8 @@ const ImportService = {
       }        
     }
 
+    const ruleSet = getPayloadRules(ruleSetTitle)
+    const keysToMatch = Object.keys(ruleSet);
     keysToMatch.forEach((key) => {
       out[key] = ruleSet[key](row);
     });
@@ -83,9 +83,10 @@ const ImportService = {
         if (is_error || !id) {
           return this.rejectWithEmail(account.email().email);
         }
-        // ['address','email','contribution','customValue','iban']
-        for (const k of keys) {
-          if (Array.isArray(account[k]) || typeof account[k] === 'string') continue;
+        // ['address','email','contribution','customValue', 'group']
+
+        for (const k of ['address','email','contribution','customValue', 'group_contact']) {
+          if (typeof account[k] !== 'function') continue;
           const payloadWithContactId = account[k](id);
           if (this._filterContent(k, payloadWithContactId)) {
             const pRes = await rest.createEntity(k, payloadWithContactId)
