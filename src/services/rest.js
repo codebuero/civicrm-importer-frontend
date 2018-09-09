@@ -29,6 +29,16 @@ function fetchUserForEmailPromisified(email) {
   }) 
 }
 
+function fetchContributionPromisified(contactId, amount, date) {
+  return new Promise((resolve, reject) => {
+    crmApi.get('contribution', { sequential: 1, contact_id: contactId, receive_date: date, return: 'id' }, (res) => {
+      if (res.is_error) return reject(res);
+      if (res.count > 0) return resolve(true);
+      if (res.count === 0) return resolve(false);      
+    })
+  })
+}
+
 function fetchGroups(cb) {
   return crmApi.get('group', {'options[limit]': 200,return: 'id,title,description'}, cb)
 }
@@ -74,6 +84,16 @@ async function createEntity(name, payload) {
   }
 }
 
+async function checkForExistingContribution(contactId, amount, date) {
+  try {
+    return await fetchContributionPromisified(contactId, amount, date);
+  } catch(e) {
+    console.log('ErrorInCheckForExistingContribution');
+    console.log(e);
+    throw new Error('Contribution check failed')
+  }
+}
+
 const rest = {
   setApiConfiguration,
   testApi,
@@ -83,6 +103,7 @@ const rest = {
   fetchCountries,
   createEntity,
   checkUser,
+  checkForExistingContribution
 }
 
 export {

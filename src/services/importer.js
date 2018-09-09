@@ -107,8 +107,11 @@ const ImportService = {
 
       } else {
         const payload = account['contribution'](existingUserId)
-        const pRes = await rest.createEntity('contribution', payload)
-        if (pRes.is_error) return Promise.reject(account);
+        const contributionExists = await rest.checkForExistingContribution(existingUserId, payload['total_amount'], payload['receive_date'])
+        if (!contributionExists) {
+          const pRes = await rest.createEntity('contribution', payload)
+          if (pRes.is_error) return Promise.reject(account);
+        }
       }
       
 
