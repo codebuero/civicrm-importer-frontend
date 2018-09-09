@@ -1,46 +1,107 @@
-import { groupPayload, tagPayload, parseInstrument, parseFinancialType } from './payload-rules'
+import Promise from 'bluebird'
+import { groupPayload, tagPayload, parseInstrument, parseFinancialType, getPayloadRules } from './payload-rules'
+import { rest } from './rest'
 
 const ImportService = {
-  mapDataOnRuleset: function(data = [], ruleSet = {}) {
-    return data.map(row => this._mapRowToRules(row, ruleSet));
+  mapDataOnRuleset: function(data = [], ruleSet = {}, groupId = 0, selectedTags = []) {
+    
+    const enhancedData = data.map(row => this._applyCountryId(row));
+    const out = enhancedData.map(row => this._mapRowToRules(row, ruleSet, groupId, selectedTags));
+  
+    console.log('data->ruleset', out);
+    return out
   },
-  addTagsAndGroups: function(data = [], groupId = 0, selectedTags = []) {
-    return data.map(d => {
-      let out = { ...d };
-
-      if (groupId) {
-        out = { 
-          ...out,
-          group: groupPayload(groupId),
-        }
+  _applyCountryId: function(row) {
+      const countryIds = {
+        'Deutschland': '1082',
+        'Belgien': '1020',
+        'Europäische Union': '1014',
+        'Finnland': '1075',
+        'Frankreich': '1076',
+        'Irland': '1105',
+        'Kanada': '1039',
+        'Luxemburg': '1126',
+        'Österreich': '1014',
+        'Polen': '1172',
+        'Schweiz': '1205',
+        'Vereinigte Staaten': '1228',
+        'Vereinigtes Königreich': '1226',
       }
 
-      if (data['Spenden-Typ']) {
-
-      }
-
-      if (selectedTags.length) {
-        out = { 
-          ...out,
-          tags: tagPayload(selectedTags),
-        }        
-      }
-      
-      return out;
-    })
+      return { ...row, CountryId: countryIds[row['Land']]}
   },
-  _mapRowToRules: function(row, ruleSet) {
+  _mapRowToRules: function(row, ruleSetTitle, groupId, selectedTags) {
+    const ruleSet = getPayloadRules(ruleSetTitle)
     const keysToMatch = Object.keys(ruleSet);
-    const out = {};
+    let out = {
+      emailAddress: row['Email'],
+    };
 
-    debugger;
+    if (groupId) {
+      out = { 
+        ...out,
+        group: groupPayload(groupId),
+      }
+    }
+
+    if (selectedTags.length) {
+      out = { 
+        ...out,
+        tags: tagPayload(selectedTags),
+      }        
+    }
 
     keysToMatch.forEach((key) => {
       out[key] = ruleSet[key](row);
     });
 
     return out;
-  }
+  },
+  _filterContent: function(k, data) {
+    if (k === 'customValue') {
+      if (!data['custom_1']) return false
+      if (!data['custom_1'] && !data['custom_2']) return false  
+    }
+    if (k === 'contribution') {
+      if (data['total_amount'] < 0) return false
+    }
+    return true;
+  }, 
+  rejectWithEmail(email) {
+    return Promise.reject(new Error(`Couldnt create new account for email ${email}`));
+  },
+  doImport: async function(account) {
+      const existingUserId = await rest.checkUser(account.emailAddress)
+
+      if (!existingUserId) {
+        const contactPayload = account['contact'];
+
+        const keys = Object.keys(account).filter(k => k !== 'contact');
+
+        const { is_error, id } = await rest.createEntity('contact', contactPayload)
+
+        if (is_error || !id) {
+          return this.rejectWithEmail(account.email().email);
+        }
+        // ['address','email','contribution','customValue','iban']
+        for (const k of keys) {
+          if (Array.isArray(account[k]) || typeof account[k] === 'string') continue;
+          const payloadWithContactId = account[k](id);
+          if (this._filterContent(k, payloadWithContactId)) {
+            const pRes = await rest.createEntity(k, payloadWithContactId)
+            if (pRes.is_error) return this.rejectWithEmail(account.email().email);
+          } 
+        }
+
+      } else {
+        const payload = account['contribution'](existingUserId)
+        const pRes = await rest.createEntity('contribution', payload)
+        if (pRes.is_error) return Promise.reject(account);
+      }
+      
+
+      return Promise.resolve();
+    }
 };
 
 export default ImportService;

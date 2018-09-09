@@ -45,27 +45,29 @@ export default class SelectData extends React.Component {
   }
   render() {
     return (
-      <section className="selectdata content section">
-        <div>
-          {Object.keys(this.props.parsedData).length > 1 && (<div className="field">
-            <label className="label">
-              Select Sheet
-            </label>
-            <div className="control" style={{ width: '100%' }}>
-              <div className="select is-large">
-                <select onChange={this.onSheetSelection}>
-                  <option value="0">Please choose the sheet to import</option>
-                  {Object.keys(this.props.parsedData).map(r => (<option key={r} value={r}>{r}</option>))}
-                </select>
+      <section className="section">
+        <div className="level">
+          {Object.keys(this.props.parsedData).length > 1 && (
+            <div className="level-item field">
+              <label className="label">
+                Select Sheet
+              </label>
+              <div className="control">
+                <div className="select">
+                  <select onChange={this.onSheetSelection}>
+                    <option value="0">Please choose the sheet to import</option>
+                    {Object.keys(this.props.parsedData).map(r => (<option key={r} value={r}>{r}</option>))}
+                  </select>
+                </div>
               </div>
             </div>
-          </div>)}
-          <div className="field">
+          )}
+          <div className="level-item field">
             <label className="label">
               Select Datatype 
             </label>
-            <div className="control" style={{ width: '100%' }}>
-              <div className="select is-large">
+            <div className="control">
+              <div className="select">
                 <select onChange={this.onFiletypeSelection}>
                   <option value="0">Please choose the datatype of the imported file</option>
                   {Object.keys(this.props.rulesSet).map(r => (<option key={r} value={r}>{r + ' - ' + this.props.rulesSet[r].description}</option>))}

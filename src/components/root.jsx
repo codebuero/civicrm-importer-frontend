@@ -10,9 +10,15 @@ import ImporterService from '../services/importer'
 
 import styles from '../styles/style.styl'
 
-const FIRST_SELECTION = 'upload'
+const CONFIG_FILE_PATH = '/public/js/config.json';
+
+const FIRST_SELECTION = 'upload';
 
 const DEFAULT_STATE = {
+  importing: false,
+  progress: 0,
+  importRuns: 0,
+  importErrors: [],
   apiAvailable: false,
   data: {
     rulesSet: { 
@@ -38,6 +44,7 @@ const DEFAULT_STATE = {
   ui: {
     nextEnabled: false,
     selectedTopic: FIRST_SELECTION,
+    enabledHeaderTopics: ['upload']
   },
   header: {
     topics: [
@@ -60,6 +67,7 @@ const DEFAULT_STATE = {
 export default class CiviCrmImporter extends React.Component {
   constructor(props){
     super(props)
+    this.enableNext = this.enableNext.bind(this);
     this.onHeaderClick = this.onHeaderClick.bind(this);
     this.resetState = this.resetState.bind(this);
     this.onNext = this.onNext.bind(this);
@@ -69,24 +77,32 @@ export default class CiviCrmImporter extends React.Component {
     this.selectRule = this.selectRule.bind(this);
     this.selectFile = this.selectFile.bind(this);
     this.selectData = this.selectData.bind(this);
-    this.onSwitchToSelectData = this.onSwitchToSelectData.bind(this);
+    this.cancelImport = this.cancelImport.bind(this);
+    this.testApi = this.testApi.bind(this);
 
     this.startImport = this.startImport.bind(this);
     this.state = this.resetState();
   }
 
   componentDidMount() {
+    fetch(CONFIG_FILE_PATH).then(response => {
+      return response.json();
+    }).then(json => {
+      rest.setApiConfiguration(json)
+      this.testApi();
+    });
+  }
+
+  testApi() {
     rest.testApi(apiState => {
       if (!apiState) {
         return this.setState({
           apiAvailable: false
         })
       }
-
       this.setState({
         apiAvailable: true
       })
-
       rest.fetchPrefixes(data => {
         this.setState({
           prefixes: data.values,
@@ -96,10 +112,8 @@ export default class CiviCrmImporter extends React.Component {
             countries: data.values,
           })
         })
-
       })
-
-    })
+    })      
   }
 
   resetState() {
@@ -107,6 +121,7 @@ export default class CiviCrmImporter extends React.Component {
   }
 
   onHeaderClick(chosenTopic){
+    if (!this.state.ui.enabledHeaderTopics.includes(chosenTopic)) return
     if (this.state.ui.selectedTopic !== FIRST_SELECTION && chosenTopic === FIRST_SELECTION) {
       const confirmed = window.confirm('Alle Änderungen verwerfen')
       if (confirmed) {
@@ -115,7 +130,8 @@ export default class CiviCrmImporter extends React.Component {
     } else if (chosenTopic !== FIRST_SELECTION) {
       this.setState({
         ui: {
-          selectedTopic: chosenTopic
+          selectedTopic: chosenTopic,
+          enabledHeaderTopics: this.state.ui.enabledHeaderTopics.concat([chosenTopic])
         }
       })
     }
@@ -134,7 +150,7 @@ export default class CiviCrmImporter extends React.Component {
     const currentTopic = e.target.dataset['currentTopic']; 
     const idx = this.state.header.topics.findIndex(t => t.key === currentTopic);
     const newTopicIdx = (idx < this.state.header.topics.length - 1) ? idx + 1 : 0; 
-    this.setState({ ui: { selectedTopic: this.state.header.topics[newTopicIdx].key }});
+    this.setState(({ ...state, ui }) => ({ ...state, ui: { ...ui, selectedTopic: this.state.header.topics[newTopicIdx].key }}));
   }
   selectFile(file, sheets) {
     const { importparameter } = this.state;
@@ -184,61 +200,100 @@ export default class CiviCrmImporter extends React.Component {
       }
     }))  
   }
-  onSwitchToSelectData() {
-    this.setState(state => ({ ...state, ui: { enableNext: false, selectedTopic: 'select'}}))
+  async startImport() {
+    const { data, selectedRuleSet, selectedGroup, selectedTags } = this.state.importparameter;
+    const importData = ImporterService.mapDataOnRuleset(data, selectedRuleSet, selectedGroup, selectedTags);
+
+    let i = 0;
+    for (let account of importData) {
+      i++
+      try {
+        await ImporterService.doImport(account);
+      } catch (e){
+        console.log('error during import');
+        console.log(e);
+      }
+      this.setState({
+        progress: (i * 100) / importData.length,
+      })
+    }
   }
-  startImport() {
-    const { data, selectedRuleSet, selectGroup, selectTags } = this.state.importparameter;
-    const importData = ImporterService.mapDataOnRuleset(data, selectedRuleSet);
-    // const enhancedData = ImporterService.addTagsAndGroups(importData, selectGroup, selectTags)
-  
-
-    // 1. map data array with rules to import data set
-    // 2. iterate over import set
-    // 2a. check if entity email exists
-    // 2b. if yes, abort account creation but create donation for this account
-    // 2c. if no, create account, email, address, phone and donation
-
+  cancelImport() {
+    this.setState({
+      importing: false,
+    }); 
   }
   render() {
     const { store } = this.props
+
     return (
       <div className="container">
         <header>
           <h1>CiviCrm Importer</h1>
           <div className="breadcrumb">
-            {this.state.header.topics.map(ht => (<a key={ht.key} onClick={() => this.onHeaderClick(ht.key)} className={`breadcrumb__step ${ht.key === this.state.ui.selectedTopic ? 'breadcrumb__step--active' : ''}`} href="#">{ht.value}</a>))}
+            {this.state.header.topics.map(ht => 
+              (<a 
+                key={ht.key}
+                disabled={!this.state.ui.enabledHeaderTopics.includes(ht.key)} 
+                onClick={() => this.onHeaderClick(ht.key)}
+                className={`breadcrumb__step button ${ht.key === this.state.ui.selectedTopic ? 'breadcrumb__step--active' : ''}`}
+                href="#">{ht.value}</a>))
+            }
           </div>
         </header>
-        {!this.state.apiAvailable && (<div className="notification is-danger warning">
+        {this.state.importRuns > 0 && (<div className="notification is-success alertbox">
+          Finished without errors.
+        </div>)}
+        {this.state.importRuns > 0 && this.state.importErrors.length > 0 && (<div>
+          <div className="notification is-warning alertbox">
+            Finished with errors.
+          </div>
+          <div className="content">
+            <ul>
+              {this.state.importErrors.map(e => (<li></li>))}
+            </ul>
+          </div>
+        </div>)}
+        {!this.state.apiAvailable && (<div className="notification is-danger alertbox">
           No API available with this configuration
         </div>)}
-        {this.state.ui.selectedTopic === 'upload' && (
-          <FileUploadInput 
-            selectFile={this.selectFile}
-            toggleNext={(mode) => this.setState({ ui: { enableNext: mode, selectedTopic: 'upload'}})}
-            next={this.onSwitchToSelectData}
-          />
-        )}
-        {this.state.ui.selectedTopic === 'select' && (
-          <SelectData 
-            rulesSet={this.state.data.rulesSet}
-            selectRule={this.selectRule}
-            parsedData={this.state.parsedData}
-            selectData={this.selectData}
-            toggleNext={(mode) => this.setState({ ui: { enableNext: mode, selectedTopic: 'select'}})}
-            next={() => this.setState({ ui: { enableNext: false, selectedTopic: 'enhance'}})}
-          />
-        )}
-        {this.state.ui.selectedTopic === 'enhance' && (
-          <EnhanceData
-            toggleNext={(mode) => this.setState({ ui: { enableNext: mode, selectedTopic: 'enhance'}})}
-            next={() => this.setState({ ui: { enableNext: true, selectedTopic: 'import'}})}
-            selectGroup={this.selectGroup}
-            selectTags={this.selectTags}
-          />
-        )}
-        {this.state.ui.selectedTopic === 'import' && (<Import onStartImport={this.startImport}/>)}
+        {this.state.apiAvailable && (<div>
+          {this.state.ui.selectedTopic === 'upload' && (
+            <FileUploadInput 
+              selectFile={this.selectFile}
+              toggleNext={(mode) => this.setState(({ ui: { enableNext: mode, selectedTopic: 'upload', enabledHeaderTopics: this.state.ui.enabledHeaderTopics.concat(['select']) }}))}
+              next={() => 
+                this.setState(({ ...state, ui }) => ({ ...state, ui: { ...ui, enableNext: false, selectedTopic: 'select' }}))
+              }
+            />
+          )}
+          {this.state.ui.selectedTopic === 'select' && (
+            <SelectData 
+              rulesSet={this.state.data.rulesSet}
+              selectRule={this.selectRule}
+              parsedData={this.state.parsedData}
+              selectData={this.selectData}
+              toggleNext={(mode) => this.setState({ ui: { enableNext: mode, selectedTopic: 'select', enabledHeaderTopics: this.state.ui.enabledHeaderTopics.concat(['enhance'])}})}
+              next={() => this.setState({ ui: { enableNext: false, selectedTopic: 'enhance'}})}
+            />
+          )}
+          {this.state.ui.selectedTopic === 'enhance' && (
+            <EnhanceData
+              toggleNext={(mode) => this.setState({ ui: { enableNext: mode, selectedTopic: 'enhance', enabledHeaderTopics: this.state.ui.enabledHeaderTopics.concat(['import'])}})}
+              next={() => this.setState({ ui: { enableNext: true, selectedTopic: 'import'}})}
+              selectGroup={this.selectGroup}
+              selectTags={this.selectTags}
+            />
+          )}
+          {this.state.ui.selectedTopic === 'import' && (
+            <Import 
+              onStartImport={this.startImport}
+              onCancelImport={this.cancelImport}
+              importing={false}
+              progress={this.state.progress}
+            />
+          )}
+
         <section className="section">
           <button 
             className="btn"
@@ -249,6 +304,8 @@ export default class CiviCrmImporter extends React.Component {
             Next Step
           </button>
         </section>
+         </div>
+        )}
       </div>
     )
   }

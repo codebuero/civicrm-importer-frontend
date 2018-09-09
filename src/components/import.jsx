@@ -20,8 +20,9 @@ export default class Import extends React.Component {
   render() {
     return (
       <section className="import content">
-        <progress className="progress" value="0" max="100">0</progress>
+        <progress className="progress is-success" value={this.props.progress} max="100">0</progress>
         <button className="btn" onClick={this.props.onStartImport}>Begin Import</button>
+        {this.props.importing && (<button className="btn" onClick={this.props.onCancelImport}>Cancel Import</button>)}
       </section>
     );
   }

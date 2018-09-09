@@ -28,13 +28,11 @@ export default class EnhanceData extends React.Component {
     this.setState({ loading: true })
 
     rest.fetchGroups((groups) => {
-        console.log(groups);
         this.setState(state => ({
           ...state,
           availableGroups: groups.values,
         })) 
         rest.fetchTags((tags) => {
-          console.log(tags);
           this.setState(state => ({
             ...state,
             loading: false,
@@ -58,7 +56,6 @@ export default class EnhanceData extends React.Component {
   }
   onTagSelectionChange(id) {
     this.props.selectTags(id)
-
   }
 
   render() {
@@ -66,7 +63,7 @@ export default class EnhanceData extends React.Component {
       <section className="enhancedata content section">   
         {this.state.loading && (<span>Loading Groups & Tags</span>)}
         {!this.state.loading && (<div>
-          <div className="container">
+          <div className="container groupselection">
             <div className="field">
               <label className="label">
                 Select Group 
@@ -81,7 +78,7 @@ export default class EnhanceData extends React.Component {
               </div>
             </div>
           </div>
-          <div className="container" style={{ marginTop: '4vh' }}>
+          <div className="container tagselection" style={{ marginTop: '4vh' }}>
             <label className="label">
               Select Tags (multiselect possible) 
             </label>

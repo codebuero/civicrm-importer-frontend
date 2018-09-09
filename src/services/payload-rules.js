@@ -1,3 +1,4 @@
+import moment from 'moment'
 
 function parseInstrument(row){
   const source = row['Quelle']
@@ -39,7 +40,7 @@ function calculateTagsFromDonation(row, availableTags) {
 
 const altrujaPayload = {
   contact: (row) => {
-    const noContact = row['Kontakt erlaubt'] === 'nein';
+    const noContact = row['Kontakt erlaubt?'] === 'Nein';
     const prefixId = row['Anrede'] === 'Frau' ? 2 : 1;
     const genderId = row['Anrede'] === 'Frau' ? 1 : 2;
 
@@ -69,7 +70,7 @@ const altrujaPayload = {
     is_primary: 1,
   }),
   address: (row) => (contactId = 0) => ({
-    contact_id: contacId,
+    contact_id: contactId,
     street_address: row['Adresse'],
     location_type_id: 1,
     is_primary: 1,
@@ -77,17 +78,17 @@ const altrujaPayload = {
     postal_code: row['Postleitzahl'],
     country_id: row['CountryId'],
   }),
-  iban: (row) => (contactId = 0) => ({
+  customValue: (row) => (contactId = 0) => ({
     entity_id: contactId,
     custom_1: row['IBAN'],
     custom_2: row['BIC']
   }),
-  donation: (row) => (contactId = 0) => ({ 
+  contribution: (row) => (contactId = 0) => ({ 
     contact_id: contactId,
     financial_type_id: parseFinancialType(row),
     payment_instrument_id: parseInstrument(row),
     receive_date: moment(row['Datum'], 'DD.MM.YYYY').format(),
-    total_amount: row['Spendenbetrag'],
+    total_amount: parseFloat(String(row['Spendenbetrag']).replace('.','').replace(',','.')),
     trxn_id: row['Spenden-ID'],
     currency: 'EUR',
     source: 'Altruja',
@@ -98,7 +99,27 @@ const altrujaPayload = {
 
 const onlycontactsPayload = {
   contact: () => {
+    const prefixId = row['Titel'] === 'Frau' ? 2 : 1;
+    const genderId = row['Titel'] === 'Frau' ? 1 : 2;
 
+    const notificationRules = {
+      do_not_mail: 0,
+      do_not_email: 0,
+      do_not_phone: 0,
+      is_opt_out: 0,
+      do_not_sms: 0,
+      do_not_trade: 1,
+    }
+
+    return {
+      contact_type: 'Individual',
+      preferred_language: 'de_DE',
+      first_name: row['Vorname'],
+      last_name: row['Nachname'],
+      prefix_id: prefixId,
+      gender_id: genderId,
+      ...notificationRules,
+    }
   },
   address: () => {
 
@@ -128,6 +149,16 @@ const tagPayload = (tagIds = []) => {
   }))
 }
 
+const rules = {
+  altruja: altrujaPayload,
+  onlycontacts: onlycontactsPayload,
+}
+
+
+const getPayloadRules = (key) => {
+  return rules[key]
+}
+
 export {
   altrujaPayload,
   onlycontactsPayload,
@@ -135,4 +166,5 @@ export {
   tagPayload,
   parseInstrument,
   parseFinancialType,
+  getPayloadRules,
 }
