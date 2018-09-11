@@ -25,16 +25,19 @@ const DEFAULT_STATE = {
       altruja: { 
         key: 'altruja', 
         description: 'For exports of altruja donation summaries',
+        disabled: false,
         validator: () => {}
       },
       betterplace: { 
         key: 'betterplace', 
         description: 'For exports of betterplace donation summaries',
+        disabled: true, 
         validator: () => {}
       },
       onlycontacts: {
         key: 'onlycontacts',
         description: 'A list of contacts without account data',
+        disabled: true,
         validator: () => {}
       }
     }
@@ -295,14 +298,14 @@ export default class CiviCrmImporter extends React.Component {
           )}
 
         <section className="section">
-          <button 
+          {this.state.ui.selectedTopic !== 'import' && (<button 
             className="btn"
             disabled={!this.state.ui.enableNext}
             data-current-topic={this.state.ui.selectedTopic} 
             onClick={this.onNext}
           >
             Next Step
-          </button>
+          </button>)}
         </section>
          </div>
         )}
