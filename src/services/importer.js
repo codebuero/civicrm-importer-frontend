@@ -26,13 +26,13 @@ const ImportService = {
         'Schweiz': '1205',
         'Vereinigte Staaten': '1228',
         'Vereinigtes Königreich': '1226',
-      }
+      };
 
-      return { ...row, CountryId: countryIds[row['Land']]}
+      return { ...row, CountryId: countryIds[row['country']]}
   },
   _mapRowToRules: function(row, ruleSetTitle, groupId, selectedTags) {
     let out = {
-      emailAddress: row['Email'],
+      emailAddress: row['email'],
     };
 
     if (groupId) {
