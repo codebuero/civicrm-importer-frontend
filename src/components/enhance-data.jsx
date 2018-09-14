@@ -27,20 +27,18 @@ export default class EnhanceData extends React.Component {
   componentDidMount(){
     this.setState({ loading: true })
 
-    rest.fetchGroups((groups) => {
-        this.setState(state => ({
-          ...state,
-          availableGroups: groups.values,
-        })) 
-        rest.fetchTags((tags) => {
-          this.setState(state => ({
-            ...state,
-            loading: false,
-            availableTags: tags.values,
-          }))           
-          this.props.toggleNext(true);
-        })     
-    })
+    Promise.all([rest.fetchGroups(), rest.fetchTags()])
+           .then(([groups, tags]) => {
+              this.setState(state => ({
+                ...state,
+                availableGroups: groups.values,
+                loading: false,
+                availableTags: tags.values,
+              }))           
+           }) 
+           .catch(err => {
+              console.error(err)
+           })
   }
 
   onSelectGroup() {
