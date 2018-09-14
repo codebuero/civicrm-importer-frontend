@@ -104,16 +104,15 @@ export default class CiviCrmImporter extends React.Component {
       this.setState({
         apiAvailable: true
       })
-      rest.fetchPrefixes(data => {
-        this.setState({
-          prefixes: data.values,
-        })
-        rest.fetchCountries(data => {
-          this.setState({
-            countries: data.values,
-          })
-        })
-      })
+
+      Promise.all([rest.fetchPrefixes(), rest.fetchCountries()])
+             .then(([prefixes, countries]) => {
+                this.setState({
+                  prefixes: prefixes.values,
+                  countries: countries.values
+                })
+             })
+      
     })      
   }
 
