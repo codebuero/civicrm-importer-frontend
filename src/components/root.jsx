@@ -80,23 +80,21 @@ export default class CiviCrmImporter extends React.Component {
     this.selectRule = this.selectRule.bind(this);
     this.selectFile = this.selectFile.bind(this);
     this.selectData = this.selectData.bind(this);
-    this.cancelImport = this.cancelImport.bind(this);
-    this.testApi = this.testApi.bind(this);
+    this.resetImport = this.resetImport.bind(this);
+    this.initialRequest = this.initialRequest.bind(this);
 
     this.startImport = this.startImport.bind(this);
     this.state = this.resetState();
   }
 
   componentDidMount() {
-    fetch(CONFIG_FILE_PATH).then(response => {
-      return response.json();
-    }).then(json => {
-      rest.setApiConfiguration(json)
-      this.testApi();
-    });
+    rest.loadApiConfiguration()
+        .then(() => {
+          this.initialRequest();
+        })
   }
 
-  testApi() {
+  initialRequest() {
     rest.testApi(apiState => {
       if (!apiState) {
         return this.setState({
@@ -128,7 +126,9 @@ export default class CiviCrmImporter extends React.Component {
     if (this.state.ui.selectedTopic !== FIRST_SELECTION && chosenTopic === FIRST_SELECTION) {
       const confirmed = window.confirm('Alle Änderungen verwerfen')
       if (confirmed) {
-        return this.setState(this.resetState())
+        this.setState(this.resetState())
+        this.initialRequest()
+        return;
       } 
     } else if (chosenTopic !== FIRST_SELECTION) {
       this.setState({
@@ -204,27 +204,38 @@ export default class CiviCrmImporter extends React.Component {
     }))  
   }
   async startImport() {
+    this.setState({
+      importing: true,
+    })
     const { data, selectedRuleSet, selectedGroup, selectedTags } = this.state.importparameter;
     const importData = ImporterService.mapDataOnRuleset(data, selectedRuleSet, selectedGroup, selectedTags);
 
     let i = 0;
+    const errors = [];
+
     for (let account of importData) {
       i++
       try {
         await ImporterService.doImport(account);
       } catch (e){
-        console.log('error during import');
-        console.log(e);
+        // console.log('error during import');
+        // console.log(e);
+        errors.push(e);
       }
       this.setState({
         progress: (i * 100) / importData.length,
       })
     }
-  }
-  cancelImport() {
+
     this.setState({
-      importing: false,
-    }); 
+      importRuns: this.state.importRuns + 1,
+      importing: false, 
+      importErrors: errors,
+    })
+  }
+  resetImport() {
+    this.setState(this.resetState())
+    this.initialRequest()
   }
   render() {
     const { store } = this.props
@@ -244,17 +255,17 @@ export default class CiviCrmImporter extends React.Component {
             }
           </div>
         </header>
-        {this.state.importRuns > 0 && (<div className="notification is-success alertbox">
+        {this.state.importRuns > 0 && this.state.importErrors.length === 0 && (<div className="notification is-success alertbox">
           Finished without errors.
         </div>)}
         {this.state.importRuns > 0 && this.state.importErrors.length > 0 && (<div>
           <div className="notification is-warning alertbox">
-            Finished with errors.
+            Finished with errors, see console.
           </div>
           <div className="content">
-            <ul>
-              {this.state.importErrors.map(e => (<li></li>))}
-            </ul>
+            <ol style={{ fontSize: '16px', textAlign: 'left'}}>
+              {this.state.importErrors.map((e, idx) => (<li key={idx}>{e.message}</li>))}
+            </ol>
           </div>
         </div>)}
         {!this.state.apiAvailable && (<div className="notification is-danger alertbox">
@@ -291,8 +302,9 @@ export default class CiviCrmImporter extends React.Component {
           {this.state.ui.selectedTopic === 'import' && (
             <Import 
               onStartImport={this.startImport}
-              onCancelImport={this.cancelImport}
-              importing={false}
+              onResetImport={this.resetImport}
+              importing={this.state.importing}
+              importRuns={this.state.importRuns}
               progress={this.state.progress}
             />
           )}

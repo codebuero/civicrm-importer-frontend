@@ -4,6 +4,9 @@ import PropTypes from 'prop-types'
 export default class Import extends React.Component {
   static propTypes = {
     onStartImport: PropTypes.func.isRequired,
+    onResetImport: PropTypes.func.isRequired,
+    importing: PropTypes.bool.isRequired,
+    importRuns: PropTypes.number.isRequired,
   }
   constructor(props) {
     super(props)
@@ -12,6 +15,7 @@ export default class Import extends React.Component {
 
     this.state = {
       loading: false,
+      lastRunCount: props.importRuns
     }
   }
   startImport() {
@@ -20,9 +24,13 @@ export default class Import extends React.Component {
   render() {
     return (
       <section className="import content">
-        <progress className="progress is-success" value={this.props.progress} max="100">0</progress>
-        <button className="btn" onClick={this.props.onStartImport}>Begin Import</button>
-        {this.props.importing && (<button className="btn" onClick={this.props.onCancelImport}>Cancel Import</button>)}
+        {this.state.lastRunCount === this.props.importRuns && (
+          <div>
+            <progress className="progress is-success" value={this.props.progress} max="100">0</progress>
+            <button disabled={this.props.importing} className="btn" onClick={this.props.onStartImport}>Begin Import</button>
+          </div>
+        )}
+        {this.state.lastRunCount < this.props.importRuns && (<button className="btn" onClick={this.props.onResetImport}>Reset Importer</button>)}
       </section>
     );
   }
