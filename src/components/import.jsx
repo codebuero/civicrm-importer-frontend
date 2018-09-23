@@ -11,6 +11,8 @@ export default class Import extends React.Component {
   constructor(props) {
     super(props)
 
+    this.displayName = 'Import';
+    
     this.startImport = this.startImport.bind(this);
 
     this.state = {
