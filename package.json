@@ -8,7 +8,7 @@
     "lint": "eslint src",
     "cli": "node src/cli.js",
     "watch": "webpack --watch",
-    "deploy": "webpack && zip importer-pkg.zip index.html public/* && scp importer-pkg.zip $CIVI_USER@$CIVI_IP:~/importer-pkg.zip"
+    "deploy": "webpack && zip importer-pkg.zip index.html public/* && scp importer-pkg.zip $CIVI_USER@$CIVI_IP:~/importer-pkg.zip && rm importer-pkg.zip"
   },
   "author": "andirotter",
   "license": "ISC",
