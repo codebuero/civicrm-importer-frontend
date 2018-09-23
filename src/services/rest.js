@@ -2,12 +2,23 @@ import Promise from 'bluebird'
 import { isEmpty } from 'lodash'
 import CrmApi from 'civicrm'
 
+const CONFIG_FILE_PATH = '/importer/public/config.json';
+
 let configRemote = {}
 let crmApi = {}
 
 const setApiConfiguration = (config) => {
   configRemote = config
   crmApi = new CrmApi(configRemote);
+}
+
+const loadApiConfiguration = () => {
+  return fetch(CONFIG_FILE_PATH).then(response => {
+    return response.json();
+  }).then(json => {
+    setApiConfiguration(json)
+    Promise.resolve()
+  })
 }
 
 function testApi(cb) {
@@ -17,12 +28,12 @@ function testApi(cb) {
   })
 }
 
-function fetchUserForEmailPromisified(email) {
+function checkIfEmailExists(email = '') {
+  const _email = email.toLowerCase();
   return new Promise((resolve, reject) => {
-    crmApi.get('Contact', { sequential: 1, 'email': email, return: 'id, display_name, email' }, (res) => {
-      console.log('fetchUserForEmail', email)
-      console.log('fetchUserForEmail', res.values)
-      if (res.is_error) return reject(res);
+    crmApi.get('Email', { sequential: 1, 'email': _email, return: 'id, contact_id' }, (res) => {
+      if (res.is_error) return reject(new Error(res.error_message));
+      console.log('fetched email ', _email, ' found: ', res.count, ' content: ', res.values);
       if (res.count > 0) return resolve(res.values[0].contact_id);
       if (res.count === 0) return resolve(0);
     })
@@ -31,56 +42,53 @@ function fetchUserForEmailPromisified(email) {
 
 function fetchContributionPromisified(contactId, amount, date) {
   return new Promise((resolve, reject) => {
-    crmApi.get('contribution', { sequential: 1, contact_id: contactId, receive_date: date, return: 'id' }, (res) => {
-      if (res.is_error) return reject(res);
+    crmApi.get('contribution', { sequential: 1, contact_id: contactId, total_amount: amount, receive_date: date, return: 'id' }, (res) => {
+      if (res.is_error) return reject(new Error(res.error_message));
       if (res.count > 0) return resolve(true);
       if (res.count === 0) return resolve(false);      
     })
   })
 }
 
-function fetchGroups(cb) {
-  return crmApi.get('group', {'options[limit]': 200,return: 'id,title,description'}, cb)
+function fetchEntity(name = '', options = {}) {
+  return new Promise((resolve, reject) => {
+    crmApi.get(name, options, (res) => {
+      if (res && res.is_error) return reject(new Error(res.error_message));
+      return resolve(res)
+    })
+  })  
 }
 
-function fetchTags(cb) {
-  return crmApi.get('tag', {'options[limit]': 200,return: 'id,name,description,parent_id'}, cb)
+function fetchGroups() {
+  return fetchEntity('group', {'options[limit]': 200,return: 'id,title,description'});
 }
 
-function fetchPrefixes(cb) {
-  return crmApi.get('option_value', { option_group_id: 6,'options[limit]': 200,return: 'id,name'}, cb)
+function fetchTags() {
+  return fetchEntity('tag', {'options[limit]': 200,return: 'id,name,description,parent_id'});
 }
 
-function fetchCountries(cb) {
-  return crmApi.get('country', {'options[limit]': 300, return: 'id, name'}, cb)
+function fetchPrefixes() {
+  return fetchEntity('option_value', { option_group_id: 6,'options[limit]': 200,return: 'id,name'});
 }
 
-async function createPromisified(name, payload) {
+function fetchCountries() {
+  return fetchEntity('country', {'options[limit]': 300, return: 'id, name, iso_code'})
+}
+
+async function create(name, payload) {
   return new Promise((resolve, reject) => {
     crmApi.create(name, payload, (res) => {
-      if (res.is_error) return reject(res);
+      if (res.is_error) return reject(new Error(res.error_message));
       return resolve(res)
     })
   })
 } 
 
-async function checkUser(email) {
-  try {
-    return await fetchUserForEmailPromisified(email);
-  } catch(e) {
-    console.log('ErrorinCheckUser');
-    console.log(e);
-    throw new Error('User Check failed')
-  }
-}
-
 async function createEntity(name, payload) {
   try {
-    return await createPromisified(name, payload)
+    return await create(name, payload)
   } catch(e) {
-    console.log('ErrorinCreateEntity');
-    console.log(e);
-    throw new Error('Creation failed')
+    throw new Error('Creation failed for ' + name + ' with payload ' + JSON.stringify(payload))
   }
 }
 
@@ -88,13 +96,12 @@ async function checkForExistingContribution(contactId, amount, date) {
   try {
     return await fetchContributionPromisified(contactId, amount, date);
   } catch(e) {
-    console.log('ErrorInCheckForExistingContribution');
-    console.log(e);
     throw new Error('Contribution check failed')
   }
 }
 
 const rest = {
+  loadApiConfiguration,
   setApiConfiguration,
   testApi,
   fetchGroups,
@@ -102,7 +109,7 @@ const rest = {
   fetchPrefixes,
   fetchCountries,
   createEntity,
-  checkUser,
+  checkIfEmailExists,
   checkForExistingContribution
 }
 

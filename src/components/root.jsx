@@ -10,8 +10,6 @@ import ImporterService from '../services/importer'
 
 import styles from '../styles/style.styl'
 
-const CONFIG_FILE_PATH = '/public/js/config.json';
-
 const FIRST_SELECTION = 'upload';
 
 const DEFAULT_STATE = {
