@@ -1,38 +1,52 @@
 import Promise from 'bluebird'
-import { groupPayload, tagPayload, parseInstrument, parseFinancialType, getPayloadRules } from './payload-rules'
+import { 
+  groupPayload, 
+  tagPayload, 
+  parseInstrument, 
+  parseFinancialType, 
+  getPayloadRules,
+} from './payload-rules'
 import { rest } from './rest'
+
+const PAYLOAD_ALLOW_LIST = ['address','email','contribution','customValue', 'group_contact', 'entity_tag']
 
 const ImportService = {
   mapDataOnRuleset: function(data = [], ruleSet = {}, groupId = 0, selectedTags = []) {
-    
-    const enhancedData = data.map(row => this._applyCountryId(row));
-    const out = enhancedData.map(row => this._mapRowToRules(row, ruleSet, groupId, selectedTags));
-  
-    console.log('data->ruleset', out);
-    return out
+    return data.map(row => this._mapRowToRules(row, ruleSet, groupId, selectedTags));
   },
-  _applyCountryId: function(row) {
+  _getCountryId: function(row) {
       const countryIds = {
         'Deutschland': '1082',
         'Belgien': '1020',
+        'Dänemark': '1059',
         'Europäische Union': '1014',
         'Finnland': '1075',
         'Frankreich': '1076',
         'Irland': '1105',
+        'Italien': '1107',
         'Kanada': '1039',
         'Luxemburg': '1126',
         'Österreich': '1014',
+        'Mexiko': '1140',
+        'Niederlande': '1152',
         'Polen': '1172',
+        'Portugal': '1173',
+        'Schweden': '1204',
         'Schweiz': '1205',
+        'Senegal': '1188',
+        'Singapur': '1191',
+        'Spanien': '1198',
+        'Vereinigte Arabische Emirate': '1225',
         'Vereinigte Staaten': '1228',
         'Vereinigtes Königreich': '1226',
       };
 
-      return { ...row, CountryId: countryIds[row['country']]}
+      return countryIds[row['country']];
   },
   _mapRowToRules: function(row, ruleSetTitle, groupId, selectedTags) {
     let out = {
       emailAddress: row['email'],
+      countryId: this._getCountryId(row),
     };
 
     if (groupId) {
@@ -71,21 +85,18 @@ const ImportService = {
     return Promise.reject(new Error(`Couldnt create new account for email ${email}`));
   },
   doImport: async function(account) {
-      const existingUserId = await rest.checkUser(account.emailAddress)
+      const existingUserId = await rest.checkIfEmailExists(account.emailAddress)
 
       if (!existingUserId) {
         const contactPayload = account['contact'];
-
-        const keys = Object.keys(account).filter(k => k !== 'contact');
-
         const { is_error, id } = await rest.createEntity('contact', contactPayload)
 
         if (is_error || !id) {
           return this.rejectWithEmail(account.email().email);
         }
-        // ['address','email','contribution','customValue', 'group']
 
-        for (const k of Array.from(['address','email','contribution','customValue', 'group_contact', 'entity_tag'])) {
+        for (const k of PAYLOAD_ALLOW_LIST) {
+          // the tag payloads are in an array of functions, not only a function
           if (Array.isArray(account[k])) {
             const payloadsWithContactId = account[k].map(p => p(id))
 
@@ -95,7 +106,8 @@ const ImportService = {
             }
             continue;
           }
-
+          // all other payloads are a curried function where the payload is derived
+          // after calling the function with the id of the created contact
           if (typeof account[k] === "function") {
             const payloadWithContactId = account[k](id);
             if (this._filterContent(k, payloadWithContactId)) {
@@ -104,18 +116,16 @@ const ImportService = {
             } 
           }
         }
-
       } else {
         const payload = account['contribution'](existingUserId)
         const contributionExists = await rest.checkForExistingContribution(existingUserId, payload['total_amount'], payload['receive_date'])
         if (!contributionExists) {
           const pRes = await rest.createEntity('contribution', payload)
-          if (pRes.is_error) return Promise.reject(account);
+          if (pRes.is_error) return this.rejectWithEmail(account.email().email);
         }
       }
-      
 
-      return Promise.resolve();
+      return;
     }
 };
 
