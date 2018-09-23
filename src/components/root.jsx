@@ -5,6 +5,7 @@ import FileUploadInput from './file-upload-input'
 import SelectData from './select-data'
 import EnhanceData from './enhance-data'
 import Import from './import'
+import ErrorNotification from './error-notification'
 import { rest } from '../services/rest'
 import ImporterService from '../services/importer'
 
@@ -252,22 +253,11 @@ export default class CiviCrmImporter extends React.Component {
             }
           </div>
         </header>
-        {this.state.importRuns > 0 && this.state.importErrors.length === 0 && (<div className="notification is-success alertbox">
-          Finished without errors.
-        </div>)}
-        {this.state.importRuns > 0 && this.state.importErrors.length > 0 && (<div>
-          <div className="notification is-warning alertbox">
-            Finished with errors, see console.
-          </div>
-          <div className="content">
-            <ol style={{ fontSize: '16px', textAlign: 'left'}}>
-              {this.state.importErrors.map((e, idx) => (<li key={idx}>{e.message}</li>))}
-            </ol>
-          </div>
-        </div>)}
-        {!this.state.apiAvailable && (<div className="notification is-danger alertbox">
-          No API available with this configuration
-        </div>)}
+        <ErrorNotification 
+          apiAvailable={this.state.apiAvailable}
+          importRuns={this.state.importRuns}
+          importErrors={this.state.importErrors}
+        />
         {this.state.apiAvailable && (<div>
           {this.state.ui.selectedTopic === 'upload' && (
             <FileUploadInput 
@@ -305,7 +295,6 @@ export default class CiviCrmImporter extends React.Component {
               progress={this.state.progress}
             />
           )}
-
         <section className="section">
           {this.state.ui.selectedTopic !== 'import' && (<button 
             className="btn"
