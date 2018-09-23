@@ -6,6 +6,8 @@ import _ from 'lodash'
 import { Set } from 'immutable'
 import XLSX from 'xlsx'
 
+const ACCEPTED_MIME_TYPES = "application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
 export default class FileUploadInput extends React.Component {
   static propTypes = {
     selectFile: PropTypes.func.isRequired,
@@ -14,8 +16,11 @@ export default class FileUploadInput extends React.Component {
 
   constructor(props) {
     super(props)
+
+    this.displayName = 'FileUploadInput';
+
     this.handleFile = this.handleFile.bind(this);
-    this.state = { file: { name: '' } };
+    this.state = { file: { name: '' }, isLoadingFile: false };
   }
 
   handleFile(files) {
@@ -24,7 +29,14 @@ export default class FileUploadInput extends React.Component {
 
     const reader = new FileReader();
     const isBinaryString = !!reader.readAsBinaryString
-    reader.onload = (e) => {
+
+    reader.onloadstart = (e) => {
+      this.setState({
+        isLoadingFile: true
+      })
+    }
+
+    reader.onloadend = (e) => {
         const bstr = e.target.result;
         const options = {
           type: isBinaryString ? 'binary' : 'array'
@@ -33,13 +45,15 @@ export default class FileUploadInput extends React.Component {
         const sheets = {};
         workbook.SheetNames.forEach(name => {
           sheets[name] = XLSX.utils.sheet_to_json(workbook.Sheets[name]);
-        })
+        });
         this.setState({
-          file
+          file, 
+          isLoadingFile: false
         });
         this.props.selectFile(file, sheets);
         this.props.toggleNext(true);
     };
+
     reader.readAsBinaryString(file);
   }
 
@@ -49,15 +63,25 @@ export default class FileUploadInput extends React.Component {
             <Dropzone 
               onDropAccepted={this.handleFile} 
               className="dropzone-container"
-              accept="application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              accept={ACCEPTED_MIME_TYPES}
             >
-              {!this.state.file.name && (<p>
-                <span>Drag'n'Drop File into Field</span><br />
-                <span>or</span><br />
-                <span>Click Field for Upload Dialog</span>
-                </p>)}
-              {this.state.file.name && 
-                (<p><span key={this.state.file.name}>{this.state.file.name} </span></p>)}
+              {!this.state.file.name && !this.state.isLoadingFile && (
+                <p>
+                  <span>Drag'n'Drop File into Field</span><br />
+                  <span>or</span><br />
+                  <span>Click Field for Upload Dialog</span>
+                </p>)
+              }
+              {this.state.isLoadingFile && (
+                <p>Loading File</p>
+              )}
+              {this.state.file.name && !this.state.isLoadingFile && (
+                <p>
+                  <span key={this.state.file.name}>
+                  {this.state.file.name}
+                  </span>
+                </p>
+              )}
             </Dropzone>
       </section>
     );
