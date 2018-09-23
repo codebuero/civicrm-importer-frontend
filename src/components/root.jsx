@@ -26,19 +26,20 @@ const DEFAULT_STATE = {
         key: 'altruja', 
         description: 'For exports of altruja donation summaries',
         disabled: false,
-        validator: () => {}
+        options: [
+          "calculateGroupFromNewsletterAndSite": false,
+          "calculateTagsFromContributionType": false,
+        ],
       },
       betterplace: { 
         key: 'betterplace', 
         description: 'For exports of betterplace donation summaries',
         disabled: true, 
-        validator: () => {}
       },
       onlycontacts: {
         key: 'onlycontacts',
         description: 'A list of contacts without account data',
         disabled: true,
-        validator: () => {}
       }
     }
   },
@@ -68,8 +69,13 @@ const DEFAULT_STATE = {
 };
 
 export default class CiviCrmImporter extends React.Component {
+  static propTypes = {
+    version: PropTypes.string.isRequired,
+  } 
+
   constructor(props){
     super(props)
+
     this.enableNext = this.enableNext.bind(this);
     this.onHeaderClick = this.onHeaderClick.bind(this);
     this.resetState = this.resetState.bind(this);
@@ -91,6 +97,10 @@ export default class CiviCrmImporter extends React.Component {
     rest.loadApiConfiguration()
         .then(() => {
           this.initialRequest();
+        })
+        .catch(err => {
+          console.error('Error on App Initialization');
+          console.error(err)
         })
   }
 
@@ -215,10 +225,10 @@ export default class CiviCrmImporter extends React.Component {
     for (let account of importData) {
       i++
       try {
+        console.log('doing import for ', account.emailAddress)
         await ImporterService.doImport(account);
+        console.log('done successful import for ', account.emailAddress)
       } catch (e){
-        // console.log('error during import');
-        // console.log(e);
         errors.push(e);
       }
       this.setState({
