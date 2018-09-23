@@ -5,6 +5,7 @@ import FileUploadInput from './file-upload-input'
 import SelectData from './select-data'
 import EnhanceData from './enhance-data'
 import Import from './import'
+import NavigationBar from './navigation-bar'
 import ErrorNotification from './error-notification'
 import { rest } from '../services/rest'
 import ImporterService from '../services/importer'
@@ -236,23 +237,15 @@ export default class CiviCrmImporter extends React.Component {
     this.initialRequest()
   }
   render() {
-    const { store } = this.props
-
     return (
       <div className="container">
-        <header>
-          <h1>CiviCrm Importer</h1>
-          <div className="breadcrumb">
-            {this.state.header.topics.map(ht => 
-              (<a 
-                key={ht.key}
-                disabled={!this.state.ui.enabledHeaderTopics.includes(ht.key)} 
-                onClick={() => this.onHeaderClick(ht.key)}
-                className={`breadcrumb__step button ${ht.key === this.state.ui.selectedTopic ? 'breadcrumb__step--active' : ''}`}
-                href="#">{ht.value}</a>))
-            }
-          </div>
-        </header>
+        <NavigationBar 
+          topics={this.state.header.topics}
+          enabledHeaderTopics={this.state.ui.enabledHeaderTopics}
+          onHeaderClick={this.onHeaderClick}
+          selectedTopic={this.state.ui.selectedTopic}
+          version={this.props.version}
+        />
         <ErrorNotification 
           apiAvailable={this.state.apiAvailable}
           importRuns={this.state.importRuns}
