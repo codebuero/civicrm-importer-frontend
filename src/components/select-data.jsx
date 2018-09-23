@@ -45,38 +45,48 @@ export default class SelectData extends React.Component {
   }
   render() {
     return (
-      <section className="section">
-        <div className="level">
-          {Object.keys(this.props.parsedData).length > 1 && (
-            <div className="level-item field">
-              <label className="label">
+      <section className="section"><div>
+        <div className="field is-horizontal">
+          {Object.keys(this.props.parsedData).length > 1 && (<div>
+            <div className="field-label is-normal">
+              <label className="label" style={{ textAlign: 'left' }}>
                 Select Sheet
               </label>
+            </div>
+            <div className="field-body">
+              <div className="field">
+                <div className="control">
+                  <div className="select">
+                    <select onChange={this.onSheetSelection}>
+                      <option value="0">Please choose the sheet to import</option>
+                      {Object.keys(this.props.parsedData).map(r => (<option key={r} value={r}>{r}</option>))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div></div>
+          )}
+        </div>
+        <div className="field is-horizontal">
+          <div>
+            <div className="field-label is-normal">
+              <label className="label" style={{ textAlign: 'left' }}>
+                Select Datatype 
+              </label>
+            </div>
+            <div className="field-body">
               <div className="control">
                 <div className="select">
-                  <select onChange={this.onSheetSelection}>
-                    <option value="0">Please choose the sheet to import</option>
-                    {Object.keys(this.props.parsedData).map(r => (<option key={r} value={r}>{r}</option>))}
+                  <select onChange={this.onFiletypeSelection}>
+                    <option value="0">Please choose the datatype of the imported file</option>
+                    {Object.keys(this.props.rulesSet).map(r => (<option disabled={this.props.rulesSet[r].disabled} key={r} value={r}>{r + ' - ' + this.props.rulesSet[r].description}</option>))}
                   </select>
                 </div>
               </div>
             </div>
-          )}
-          <div className="level-item field">
-            <label className="label">
-              Select Datatype 
-            </label>
-            <div className="control">
-              <div className="select">
-                <select onChange={this.onFiletypeSelection}>
-                  <option value="0">Please choose the datatype of the imported file</option>
-                  {Object.keys(this.props.rulesSet).map(r => (<option key={r} value={r}>{r + ' - ' + this.props.rulesSet[r].description}</option>))}
-                </select>
-              </div>
-            </div>
           </div>
         </div>
-      </section>);
+    </div></section>);
   }
 }
 
