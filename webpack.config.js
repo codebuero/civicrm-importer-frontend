@@ -7,7 +7,7 @@ module.exports = {
   devtool: 'eval',
   entry: ["babel-polyfill", "./src/client.js"],
   output: {
-    path: path.join(__dirname, 'public/js'),
+    path: path.join(__dirname, 'public'),
     filename: 'bundle.js',
     publicPath: '/static/',
     libraryTarget: 'var',
