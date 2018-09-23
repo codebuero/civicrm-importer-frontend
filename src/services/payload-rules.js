@@ -58,17 +58,17 @@ function calculateTagsFromDonation(row, availableTags) {
 
 const altrujaPayload = {
   contact: (row) => {
-    const noContact = row['newsletter'] === 'Nein';
+    const noContact = row['newsletter'] === 'Nein' ? 1 : 0;
     const prefixId = row['anrede'] === 'Frau' ? 2 : 1;
     const genderId = row['anrede'] === 'Frau' ? 1 : 2;
 
     const notificationRules = {
-      do_not_mail: !noContact ? 0 : 1,
-      do_not_email: !noContact ? 0 : 1,
-      do_not_phone: !noContact ? 0 : 1,
-      is_opt_out: !noContact ? 0 : 1,
-      do_not_sms: !noContact ? 0 : 1,
-      do_not_trade: !noContact ? 0 : 1,
+      do_not_mail: noContact,
+      do_not_email: noContact,
+      do_not_phone: noContact,
+      is_opt_out: noContact,
+      do_not_sms: noContact,
+      do_not_trade: noContact,
     }
 
     return {
@@ -105,8 +105,8 @@ const altrujaPayload = {
     contact_id: contactId,
     financial_type_id: parseFinancialType(row),
     payment_instrument_id: parseInstrument(row),
-    receive_date: moment(row['datum'], 'DD.MM.YYYY').format(),
-    total_amount: parseFloat(String(row['abetrag']).replace('.','').replace(',','.')),
+    receive_date: moment(row['datum'], 'DD.MM.YYYY').startOf('day').format(),
+    total_amount: row['abetrag'].replace(',',''),
     trxn_id: row['spende_id'],
     currency: 'EUR',
     source: 'Altruja',
