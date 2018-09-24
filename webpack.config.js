@@ -31,7 +31,7 @@ module.exports = {
           exclude: NODE_MODULES_PATH,
         },
         { 
-          test: /\.styl$/, 
+          test: /\.css|\.styl$/, 
           loader: ExtractTextPlugin.extract({
               fallbackLoader: 'style-loader',
               loader: "css-loader!stylus-loader"

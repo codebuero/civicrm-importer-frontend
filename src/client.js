@@ -1,6 +1,7 @@
 import CiviCrmImporter from './components/root'
 import React from 'react'
 import ReactDOM from 'react-dom'
+import 'bulma/css/bulma.css'
 
 const VERSION = "0.0.2"
 

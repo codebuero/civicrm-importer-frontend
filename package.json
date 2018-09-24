@@ -40,6 +40,7 @@
   "dependencies": {
     "babel-polyfill": "^6.26.0",
     "bluebird": "^3.5.1",
+    "bulma": "^0.7.1",
     "civicrm": "https://github.com/codebuero/node-civicrm.git#9ca52ebabd105665b641532caf6f4d08227fb4bd",
     "classnames": "^2.2.3",
     "compression": "^1.6.2",
