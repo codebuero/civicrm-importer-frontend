@@ -1,9 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import {observer} from 'mobx-react'
 import Dropzone from 'react-dropzone'
 import _ from 'lodash'
-import { Set } from 'immutable'
 import XLSX from 'xlsx'
 
 const ACCEPTED_MIME_TYPES = "application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
