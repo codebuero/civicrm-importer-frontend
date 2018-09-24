@@ -1,4 +1,6 @@
 node_modules
 dist
-public
+public/bundle.js
+public/styles.css
+public/config.json
 *.zip
