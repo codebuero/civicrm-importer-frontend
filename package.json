@@ -3,10 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node bin/index.js",
-    "lint": "eslint src",
-    "cli": "node src/cli.js",
+    "test": "jest test/*.test.js --notify --config=jest.config.js",
     "watch": "webpack --watch",
     "deploy": "webpack && zip importer-pkg.zip index.html public/* && scp importer-pkg.zip $CIVI_USER@$CIVI_IP:~/importer-pkg.zip && rm importer-pkg.zip"
   },
@@ -29,9 +26,7 @@
     "eslint-plugin-react": "^6.10.3",
     "extract-text-webpack-plugin": "^2.1.2",
     "file-loader": "^0.11.1",
-    "jquery": "^3.2.1",
-    "react-bulma-components": "^1.5.0",
-    "react-hot-loader": "^2.0.0-alpha-4",
+    "jest": "^23.6.0",
     "style-loader": "^0.16.1",
     "stylus": "^0.54.5",
     "stylus-loader": "^3.0.2",
