@@ -31,11 +31,6 @@ const DEFAULT_STATE = {
           "calculateTagsFromContributionType": false,
         ],
       },
-      betterplace: { 
-        key: 'betterplace', 
-        description: 'For exports of betterplace donation summaries',
-        disabled: true, 
-      },
       onlycontacts: {
         key: 'onlycontacts',
         description: 'A list of contacts without account data',
@@ -46,7 +41,7 @@ const DEFAULT_STATE = {
   prefixes: [],
   countries: [],
   ui: {
-    nextEnabled: false,
+    enableNext: false,
     selectedTopic: FIRST_SELECTION,
     enabledHeaderTopics: ['upload']
   },
@@ -79,7 +74,7 @@ export default class CiviCrmImporter extends React.Component {
     this.enableNext = this.enableNext.bind(this);
     this.onHeaderClick = this.onHeaderClick.bind(this);
     this.resetState = this.resetState.bind(this);
-    this.onNext = this.onNext.bind(this);
+    this.next = this.next.bind(this);
     this.selectGroup = this.selectGroup.bind(this);
     this.selectTags = this.selectTags.bind(this);
     this.enhanceNext = this.enableNext.bind(this);
@@ -140,29 +135,40 @@ export default class CiviCrmImporter extends React.Component {
         return;
       } 
     } else if (chosenTopic !== FIRST_SELECTION) {
-      this.setState({
+
+      this.setState(state => ({
+        ...state,
         ui: {
+          enabledHeaderTopics: state.ui.enabledHeaderTopics,
           selectedTopic: chosenTopic,
-          enabledHeaderTopics: this.state.ui.enabledHeaderTopics.concat([chosenTopic])
+          enableNext: false
         }
-      })
+      }))
     }
   }
   enableNext() {
     const { ui } = this.state;
+
     this.setState(state => ({
       ...state,
       ui: {
         ...ui,
-        nextEnabled: true,
+        enableNext: true,
       }
     }))
   }
-  onNext(e) {
+  next(e) {
     const currentTopic = e.target.dataset['currentTopic']; 
     const idx = this.state.header.topics.findIndex(t => t.key === currentTopic);
     const newTopicIdx = (idx < this.state.header.topics.length - 1) ? idx + 1 : 0; 
-    this.setState(({ ...state, ui }) => ({ ...state, ui: { ...ui, selectedTopic: this.state.header.topics[newTopicIdx].key }}));
+    this.setState(({ ...state, ui }) => ({ 
+      ...state, 
+      ui: { 
+        ...ui, 
+        selectedTopic: this.state.header.topics[newTopicIdx].key,
+        enableNext: false,
+      }})
+    );
   }
   selectFile(file, sheets) {
     const { importparameter } = this.state;
@@ -277,7 +283,15 @@ export default class CiviCrmImporter extends React.Component {
               selectRule={this.selectRule}
               parsedData={this.state.parsedData}
               selectData={this.selectData}
-              toggleNext={(mode) => this.setState({ ui: { enableNext: mode, selectedTopic: 'select', enabledHeaderTopics: this.state.ui.enabledHeaderTopics.concat(['enhance'])}})}
+              toggleNext={(mode) => 
+                this.setState({ 
+                  ui: { 
+                    enableNext: mode, 
+                    selectedTopic: 'select', 
+                    enabledHeaderTopics: this.state.ui.enabledHeaderTopics.concat(['enhance'])
+                  }
+                }
+              )}
               next={() => this.setState({ ui: { enableNext: false, selectedTopic: 'enhance'}})}
             />
           )}
@@ -300,10 +314,10 @@ export default class CiviCrmImporter extends React.Component {
           )}
         <section className="section">
           {this.state.ui.selectedTopic !== 'import' && (<button 
-            className="btn"
+            className="button is-fullwidth is-info"
             disabled={!this.state.ui.enableNext}
             data-current-topic={this.state.ui.selectedTopic} 
-            onClick={this.onNext}
+            onClick={this.next}
           >
             Next Step
           </button>)}

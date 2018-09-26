@@ -22,40 +22,59 @@ export default class SelectData extends React.Component {
 
     this.displayName = "SelectData";
 
+    this.state = {
+      selectedSheet: "",
+      selectedFiletype: "",
+    }
+
     this.onFiletypeSelection = this.onFiletypeSelection.bind(this);
     this.onSheetSelection = this.onSheetSelection.bind(this);
+    this.enableNext = this.enableNext.bind(this);
   }
 
-  componentDidMount() {
-    if (Object.keys(this.props.parsedData).length === 1) {
-      return this.props.selectData();
-    }
+  enableNext(sheet, filetype) {
+      this.props.selectRule(filetype)
+      this.props.selectData(sheet)
+      this.props.toggleNext(true)      
   }
+
   onSheetSelection(e) {
-    if (e.target.value !== "0") {
-      this.props.selectData(e.target.value)
-    }     
+    const selectedSheet = e.target.value 
+    if (selectedSheet !== "0") {
+      this.setState(state => ({ ...state, selectedSheet }))
+      if (selectedSheet && this.state.selectedFiletype) {
+        this.enableNext(selectedSheet, this.state.selectedFiletype)
+      }
+      return
+    }  
+    this.setState(state => ({ ...state, selectedSheet: "" })) 
+    this.props.toggleNext(false) 
   }
+
   onFiletypeSelection(e) {
+    const selectedFiletype = e.target.value
     if (e.target.value !== "0") {
-      this.props.selectRule(e.target.value)
-      return this.props.toggleNext(true);
+      this.setState(state => ({ ...state, selectedFiletype}))
+      if (selectedFiletype && this.state.selectedSheet) {
+        this.enableNext(this.state.selectedSheet, selectedFiletype)
+      }
+      return
     } 
+    this.setState(state => ({ ...state, selectedFiletype: "" }))
     this.props.toggleNext(false)
   }
+
   render() {
     return (
-      <section className="section"><div>
-        <div className="field is-horizontal">
-          {Object.keys(this.props.parsedData).length > 1 && (<div>
-            <div className="field-label is-normal">
-              <label className="label" style={{ textAlign: 'left' }}>
-                Select Sheet
-              </label>
-            </div>
-            <div className="field-body">
+      <section className="section">
+        <div className="container">
+          <div className="columns">
+            {Object.keys(this.props.parsedData).length > 1 && (<div className="column is-half">
               <div className="field">
-                <div className="control">
+                <label className="label">
+                  Select Sheet
+                </label>
+                <div className="field">
                   <div className="select">
                     <select onChange={this.onSheetSelection}>
                       <option value="0">Please choose the sheet to import</option>
@@ -64,29 +83,26 @@ export default class SelectData extends React.Component {
                   </div>
                 </div>
               </div>
-            </div></div>
-          )}
-        </div>
-        <div className="field is-horizontal">
-          <div>
-            <div className="field-label is-normal">
-              <label className="label" style={{ textAlign: 'left' }}>
-                Select Datatype 
-              </label>
-            </div>
-            <div className="field-body">
-              <div className="control">
-                <div className="select">
-                  <select onChange={this.onFiletypeSelection}>
-                    <option value="0">Please choose the datatype of the imported file</option>
-                    {Object.keys(this.props.rulesSet).map(r => (<option disabled={this.props.rulesSet[r].disabled} key={r} value={r}>{r + ' - ' + this.props.rulesSet[r].description}</option>))}
-                  </select>
+            </div>)}
+            <div className="column is-half">
+              <div className="field">
+                <label className="label" style={{ textAlign: 'left' }}>
+                  Select Datatype 
+                </label>
+                <div className="field">
+                  <div className="select">
+                    <select onChange={this.onFiletypeSelection}>
+                      <option value="0">Please choose the datatype of the imported file</option>
+                      {Object.keys(this.props.rulesSet).map(r => (<option disabled={this.props.rulesSet[r].disabled} key={r} value={r}>{r + ' - ' + this.props.rulesSet[r].description}</option>))}
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-    </div></section>);
+      </section>
+    );
   }
 }
 
