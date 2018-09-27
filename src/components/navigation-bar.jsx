@@ -1,5 +1,6 @@
 import React from 'react'
 import Proptypes from 'prop-types'
+import { Set } from 'immutable'
 
 const NavigationBar = ({ topics, enabledHeaderTopics, onHeaderClick, selectedTopic, version }) => 
 (<header>
@@ -18,7 +19,7 @@ const NavigationBar = ({ topics, enabledHeaderTopics, onHeaderClick, selectedTop
 
 NavigationBar.propTypes = {
   topics: Proptypes.arrayOf(Proptypes.shape({ key: Proptypes.string.isRequired, value: Proptypes.string.isRequired })),
-  enabledHeaderTopics: Proptypes.arrayOf(Proptypes.string.isRequired).isRequired,
+  enabledHeaderTopics: Proptypes.instanceOf(Set).isRequired,
   onHeaderClick: Proptypes.func.isRequired,
   selectedTopic: Proptypes.string.isRequired,
 }

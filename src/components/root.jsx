@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { Set } from 'immutable'
 
 import FileUploadInput from './file-upload-input'
 import SelectData from './select-data'
@@ -43,7 +44,7 @@ const DEFAULT_STATE = {
   ui: {
     enableNext: false,
     selectedTopic: FIRST_SELECTION,
-    enabledHeaderTopics: ['upload']
+    enabledHeaderTopics: Set(['upload'])
   },
   header: {
     topics: [
@@ -135,7 +136,6 @@ export default class CiviCrmImporter extends React.Component {
         return;
       } 
     } else if (chosenTopic !== FIRST_SELECTION) {
-
       this.setState(state => ({
         ...state,
         ui: {
@@ -271,7 +271,7 @@ export default class CiviCrmImporter extends React.Component {
           {this.state.ui.selectedTopic === 'upload' && (
             <FileUploadInput 
               selectFile={this.selectFile}
-              toggleNext={(mode) => this.setState(({ ui: { enableNext: mode, selectedTopic: 'upload', enabledHeaderTopics: this.state.ui.enabledHeaderTopics.concat(['select']) }}))}
+              toggleNext={(mode) => this.setState(({ ui: { enableNext: mode, selectedTopic: 'upload', enabledHeaderTopics: this.state.ui.enabledHeaderTopics.add('select') }}))}
               next={() => 
                 this.setState(({ ...state, ui }) => ({ ...state, ui: { ...ui, enableNext: false, selectedTopic: 'select' }}))
               }
@@ -283,21 +283,28 @@ export default class CiviCrmImporter extends React.Component {
               selectRule={this.selectRule}
               parsedData={this.state.parsedData}
               selectData={this.selectData}
-              toggleNext={(mode) => 
+              toggleNext={(mode) => {
+                let newEnabledTopics
+                if (mode) {
+                  newEnabledTopics = this.state.ui.enabledHeaderTopics.add('enhance')
+                } else {
+                  newEnabledTopics = this.state.ui.enabledHeaderTopics.remove('enhance')
+                }
+                
                 this.setState({ 
                   ui: { 
                     enableNext: mode, 
                     selectedTopic: 'select', 
-                    enabledHeaderTopics: this.state.ui.enabledHeaderTopics.concat(['enhance'])
+                    enabledHeaderTopics: newEnabledTopics
                   }
                 }
-              )}
+              )}}
               next={() => this.setState({ ui: { enableNext: false, selectedTopic: 'enhance'}})}
             />
           )}
           {this.state.ui.selectedTopic === 'enhance' && (
             <EnhanceData
-              toggleNext={(mode) => this.setState({ ui: { enableNext: mode, selectedTopic: 'enhance', enabledHeaderTopics: this.state.ui.enabledHeaderTopics.concat(['import'])}})}
+              toggleNext={(mode) => this.setState({ ui: { enableNext: mode, selectedTopic: 'enhance', enabledHeaderTopics: this.state.ui.enabledHeaderTopics.add('import')}})}
               next={() => this.setState({ ui: { enableNext: true, selectedTopic: 'import'}})}
               selectGroup={this.selectGroup}
               selectTags={this.selectTags}
