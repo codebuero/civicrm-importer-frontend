@@ -31,7 +31,7 @@ function testApi(cb) {
 function checkIfEmailExists(email = '') {
   const _email = email.toLowerCase();
   return new Promise((resolve, reject) => {
-    crmApi.get('Email', { sequential: 1, 'email': _email, return: 'id, contact_id' }, (res) => {
+    crmApi.get('email', { sequential: 1, 'email': _email, return: 'id, contact_id' }, (res) => {
       if (res.is_error) return reject(new Error(res.error_message));
       console.log('fetched email ', _email, ' found: ', res.count, ' content: ', res.values);
       if (res.count > 0) return resolve(res.values[0].contact_id);
