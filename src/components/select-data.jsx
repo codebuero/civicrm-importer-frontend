@@ -22,8 +22,14 @@ export default class SelectData extends React.Component {
 
     this.displayName = "SelectData";
 
+    let selectedSheet = ""
+
+    if (Object.keys(this.props.parsedData).length === 1) {
+      selectedSheet = Object.keys(this.props.parsedData)[0]
+    }
+
     this.state = {
-      selectedSheet: "",
+      selectedSheet,
       selectedFiletype: "",
     }
 
