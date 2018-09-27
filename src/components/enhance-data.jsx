@@ -39,14 +39,7 @@ export default class EnhanceData extends React.Component {
            .catch(err => {
               console.error(err)
            })
-  }
-
-  onSelectGroup() {
-
-  }
-
-  onSelectTag() {
-
+    this.props.toggleNext(true)
   }
 
   onGroupSelectionChange(e) {
@@ -58,61 +51,65 @@ export default class EnhanceData extends React.Component {
 
   render() {
     return (
-      <section className="enhancedata content section">   
+      <section className="section">   
         {this.state.loading && (<span>Loading Groups & Tags</span>)}
-        {!this.state.loading && (<div>
-          <div className="container groupselection">
-            <div className="field">
-              <label className="label">
-                Select Group 
-              </label>
-              <div className="control" style={{ width: '100%' }}>
-                <div className="select is-large is-multiple">
-                  <select onChange={this.onGroupSelectionChange}>
-                    <option key={0} value="0">Choose 1 Group the Contact will be added too.</option>
-                    {this.state.availableGroups.map(r => (<option key={r.id} value={r.id}>{r.id + ' - ' + r.title}</option>))}
-                  </select>
+        {!this.state.loading && (<div className="container">
+            <div className="columns">
+              <div className="column is-half">
+                <div className="field">
+                  <label className="label">
+                    Select Group 
+                  </label>
+                  <div className="field">
+                    <div className="select">
+                      <select onChange={this.onGroupSelectionChange}>
+                        <option key={0} value="0">Choose 1 Group the Contact will be added too.</option>
+                        {this.state.availableGroups.map(r => (<option key={r.id} value={r.id}>{r.id + ' - ' + r.title}</option>))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="column is-half">
+                <div className="field">
+                  <label className="label">
+                    Select Tags
+                  </label>
+                  <div className="field" style={{ height: '49vh', overflow: 'auto' }}>
+                    <table className="table is-bordered is-fullwidth is-hoverable">
+                      <thead>
+                        <tr>
+                          <th></th>
+                          <th>Tag</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {this.state.availableTags.map(r => 
+                          (<tr key={`${r.id}-tr`}>
+                            <td key={`${r.id}-check`}>
+                              <input 
+                                type="checkbox" 
+                                onChange={() => this.onTagSelectionChange(r.id)}
+                              />
+                            </td>
+                            <td 
+                              key={`${r.id}-tag`} 
+                            >
+                              <span>{r.id + ' - ' + r.name}</span>
+                              <br />
+                              <span className="bottom">{r.description}</span>
+                            </td>
+                          </tr>
+                          )
+                          )
+                        }
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className="container tagselection" style={{ marginTop: '4vh' }}>
-            <label className="label">
-              Select Tags (multiselect possible) 
-            </label>
-            <div className="field" style={{ height: '49vh', overflow: 'auto' }}>
-              <table className="table is-bordered is-fullwidth is-hoverable">
-                <thead>
-                  <tr>
-                    <th></th>
-                    <th>Tag</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {this.state.availableTags.map(r => 
-                    (<tr key={`${r.id}-tr`}>
-                      <td key={`${r.id}-check`}>
-                        <input 
-                          type="checkbox" 
-                          onChange={() => this.onTagSelectionChange(r.id)}
-                        />
-                      </td>
-                      <td 
-                        key={`${r.id}-tag`} 
-                      >
-                        <span>{r.id + ' - ' + r.name}</span>
-                        <br />
-                        <span className="bottom">{r.description}</span>
-                      </td>
-                    </tr>
-                    )
-                    )
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>)}
+          </div>)}
       </section>);
   }
 }
