@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Dropzone from 'react-dropzone'
-import _ from 'lodash'
+import { isEmpty, get } from 'lodash'
 import XLSX from 'xlsx'
 
 const ACCEPTED_MIME_TYPES = "application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -18,7 +18,7 @@ export default class FileUploadInput extends React.Component {
     this.displayName = 'FileUploadInput';
 
     this.handleFile = this.handleFile.bind(this);
-    this.state = { file: { name: '' }, isLoadingFile: false };
+    this.state = { file: {}, isLoadingFile: false };
   }
 
   handleFile(files) {
@@ -63,7 +63,7 @@ export default class FileUploadInput extends React.Component {
               className="dropzone-container"
               accept={ACCEPTED_MIME_TYPES}
             >
-              {!this.state.file.name && !this.state.isLoadingFile && (
+              {isEmpty(this.state.file) && !this.state.isLoadingFile && (
                 <p>
                   <span>Drag'n'Drop File into Field</span><br />
                   <span>or</span><br />
@@ -73,7 +73,7 @@ export default class FileUploadInput extends React.Component {
               {this.state.isLoadingFile && (
                 <p>Loading File</p>
               )}
-              {this.state.file.name && !this.state.isLoadingFile && (
+              {get(this.state, 'file.name', '') && !this.state.isLoadingFile && (
                 <p>
                   <span key={this.state.file.name}>
                   {this.state.file.name}
