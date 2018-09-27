@@ -58,10 +58,10 @@ const DEFAULT_STATE = {
   file: {},
   importparameter: {
     data: [],
-    selectedRuleSet: '',
     selectedTags: [],
     selectedGroup: 0,
   },
+  selectedRuleSet: '',
 };
 
 export default class CiviCrmImporter extends React.Component {
@@ -189,13 +189,9 @@ export default class CiviCrmImporter extends React.Component {
     }))
   }
   selectRule(key) {
-    const { importparameter } = this.state;
-    this.setState(state => ({
+    return this.setState(state => ({
       ...state,
-      importparameter: {
-        ...importparameter,
-        selectedRuleSet: key,
-      }
+      selectedRuleSet: key,
     }))
   }
   selectGroup(groupId) {
@@ -222,7 +218,9 @@ export default class CiviCrmImporter extends React.Component {
     this.setState({
       importing: true,
     })
-    const { data, selectedRuleSet, selectedGroup, selectedTags } = this.state.importparameter;
+
+    const { selectedRuleSet } = this.state;
+    const { data, selectedGroup, selectedTags } = this.state.importparameter;
     const importData = ImporterService.mapDataOnRuleset(data, selectedRuleSet, selectedGroup, selectedTags);
 
     let i = 0;
