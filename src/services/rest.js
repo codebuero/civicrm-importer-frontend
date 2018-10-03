@@ -2,8 +2,6 @@ import Promise from 'bluebird'
 import { isEmpty } from 'lodash'
 import CrmApi from 'civicrm'
 
-const CONFIG_FILE_PATH = '/importer/public/config.json';
-
 let configRemote = {}
 let crmApi = {}
 
@@ -13,7 +11,7 @@ const setApiConfiguration = (config) => {
 }
 
 const loadApiConfiguration = () => {
-  return fetch(CONFIG_FILE_PATH).then(response => {
+  return fetch(IMPORTER_CONFIG_FILE_PATH).then(response => {
     return response.json();
   }).then(json => {
     setApiConfiguration(json)

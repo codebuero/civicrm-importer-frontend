@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "test": "jest test/*.test.js --notify --config=jest.config.js",
-    "watch": "webpack --watch",
+    "watch": "webpack --watch --env.CONFIG_FILE_PATH=$CONFIG_FILE_PATH",
     "deploy": "webpack && zip importer-pkg.zip index.html public/* && scp importer-pkg.zip $CIVI_USER@$CIVI_IP:~/importer-pkg.zip && rm importer-pkg.zip"
   },
   "author": "andirotter",
