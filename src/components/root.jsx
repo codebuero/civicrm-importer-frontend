@@ -7,7 +7,7 @@ import SelectData from './select-data'
 import EnhanceData from './enhance-data'
 import Import from './import'
 import NavigationBar from './navigation-bar'
-import ErrorNotification from './error-notification'
+import ErrorNotificationHandler from './error-notification'
 import { rest } from '../services/rest'
 import ImporterService from '../services/importer'
 
@@ -260,7 +260,7 @@ export default class CiviCrmImporter extends React.Component {
           selectedTopic={this.state.ui.selectedTopic}
           version={this.props.version}
         />
-        <ErrorNotification 
+        <ErrorNotificationHandler
           apiAvailable={this.state.apiAvailable}
           importRuns={this.state.importRuns}
           importErrors={this.state.importErrors}
