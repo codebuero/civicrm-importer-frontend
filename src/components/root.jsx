@@ -89,50 +89,63 @@ export default class CiviCrmImporter extends React.Component {
     this.state = this.resetState();
   }
 
-  componentDidMount() {
-    rest.loadApiConfiguration()
-        .then(() => {
-          this.initialRequest();
-        })
-        .catch(err => {
-          console.error('Error on App Initialization');
-          console.error(err)
-        })
+  async componentDidMount() {
+    try {
+      await rest.loadApiConfiguration()
+    } catch(e) {
+      console.error('Error on App Initialization');
+      return console.error(e)
+    }
+
+    try {
+      await this.initialRequest();
+    } catch(e) {
+        console.error('Error on initial request');
+        console.error(err)
+    }
   }
 
-  initialRequest() {
-    rest.testApi(apiState => {
-      if (!apiState) {
-        return this.setState({
-          apiAvailable: false
-        })
-      }
-      this.setState({
-        apiAvailable: true
+  async initialRequest() {
+    try {
+      await rest.testApi() 
+      return this.setState({
+        apiAvailable: true,
       })
+    } catch(e) {
+      return this.setState({
+        apiAvailable: false
+      })
+    }
 
-      Promise.all([rest.fetchPrefixes(), rest.fetchCountries()])
-             .then(([prefixes, countries]) => {
-                this.setState({
-                  prefixes: prefixes.values,
-                  countries: countries.values
-                })
-             })
-      
-    })      
+    let prefixes, countries = []
+
+    try {
+      const { prefixes, countries } = await Promise.props({ prefixes: rest.fetchPrefixes(), countries: rest.fetchCountries() })
+      if (!prefixes.values.length || !countries.values.length) {
+        throw new Error('No prefixes nor countries found.')
+      }
+    } catch(e) {
+      return console.error(e)
+    }
+
+    this.setState({
+      prefixes: prefixes.values,
+      countries: countries.values
+    })
+
   }
 
   resetState() {
     return DEFAULT_STATE;
   }
 
-  onHeaderClick(chosenTopic){
+  async onHeaderClick(chosenTopic){
     if (!this.state.ui.enabledHeaderTopics.includes(chosenTopic)) return
     if (this.state.ui.selectedTopic !== FIRST_SELECTION && chosenTopic === FIRST_SELECTION) {
       const confirmed = window.confirm('Alle Änderungen verwerfen')
       if (confirmed) {
         this.setState(this.resetState())
-        this.initialRequest()
+        await this.initialRequest()
         return;
       } 
     } else if (chosenTopic !== FIRST_SELECTION) {

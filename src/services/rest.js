@@ -20,10 +20,13 @@ const loadApiConfiguration = () => {
 }
 
 function testApi(cb) {
-  return crmApi.get('email', { id: 1, return: 'id, email'}, (result) => {
-    if (isEmpty(result) || (result['is_error'] && result['is_error'] === 1)) return cb(false);
-    return cb(true)
+  return new Promise((resolve, reject) => {
+    crmApi.get('email', { id: 1, return: 'id, email'}, (result) => {
+        if (isEmpty(result) || (result['is_error'] && result['is_error'] === 1)) return reject()
+        return resolve()
+      })
   })
+  
 }
 
 function checkIfEmailExists(email = '') {
