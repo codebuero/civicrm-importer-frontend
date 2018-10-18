@@ -88,11 +88,22 @@ const ImportService = {
       const existingUserId = await rest.checkIfEmailExists(account.emailAddress)
 
       if (!existingUserId) {
-        const contactPayload = account['contact'];
+
+        let organizationId
+        if (account['organization']) {
+          const organizationPayload = account['organization']
+          const { is_error, id: orgaId } = await rest.createEntity('contact', organizationPayload)
+          if (is_error || !orgaId) {
+            return this.rejectWithEmail(account.emailAddress);
+          }
+          organizationId = orgaId
+        }
+
+        const contactPayload = account['contact'](organizationId);
         const { is_error, id } = await rest.createEntity('contact', contactPayload)
 
         if (is_error || !id) {
-          return this.rejectWithEmail(account.email().email);
+          return this.rejectWithEmail(account.emailAddress);
         }
 
         for (const k of PAYLOAD_ALLOW_LIST) {
@@ -102,7 +113,7 @@ const ImportService = {
 
             for(let p of payloadsWithContactId) {
               const pRes = await rest.createEntity(k, p)
-              if (pRes.is_error) return this.rejectWithEmail(account.email().email);
+              if (pRes.is_error) return this.rejectWithEmail(account.emailAddress);
             }
             continue;
           }
@@ -112,7 +123,7 @@ const ImportService = {
             const payloadWithContactId = account[k](id);
             if (this._filterContent(k, payloadWithContactId)) {
               const pRes = await rest.createEntity(k, payloadWithContactId)
-              if (pRes.is_error) return this.rejectWithEmail(account.email().email);
+              if (pRes.is_error) return this.rejectWithEmail(account.emailAddress);
             } 
           }
         }
@@ -121,7 +132,7 @@ const ImportService = {
         const contributionExists = await rest.checkForExistingContribution(existingUserId, payload['total_amount'], payload['receive_date'])
         if (!contributionExists) {
           const pRes = await rest.createEntity('contribution', payload)
-          if (pRes.is_error) return this.rejectWithEmail(account.email().email);
+          if (pRes.is_error) return this.rejectWithEmail(account.emailAddress);
         }
       }
 

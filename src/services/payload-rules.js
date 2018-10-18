@@ -57,7 +57,7 @@ function calculateTagsFromDonation(row, availableTags) {
 }
 
 const altrujaPayload = {
-  contact: (row) => {
+  contact: (row) => (employerId) => {
     const noContact = row['newsletter'] === 'Nein' ? 1 : 0;
     const prefixId = row['anrede'] === 'Frau' ? 2 : 1;
     const genderId = row['anrede'] === 'Frau' ? 1 : 2;
@@ -71,6 +71,12 @@ const altrujaPayload = {
       do_not_trade: noContact,
     }
 
+    let employer_id
+
+    if (employerId !== undefined || employerId !== 0 || employerId !== "0") {
+      employer_id = employerId
+    }
+
     return {
       contact_type: 'Individual',
       preferred_language: 'de_DE',
@@ -78,8 +84,32 @@ const altrujaPayload = {
       last_name: row['nachname'],
       prefix_id: prefixId,
       gender_id: genderId,
+      employer_id,
       ...notificationRules,
     }
+
+  },
+  organization: (row) => {
+    const noContact = row['newsletter'] === 'Nein' ? 1 : 0;
+    const notificationRules = {
+      do_not_mail: noContact,
+      do_not_email: noContact,
+      do_not_phone: noContact,
+      is_opt_out: noContact,
+      do_not_sms: noContact,
+      do_not_trade: noContact,
+    }
+
+    if (row['firma'] && row['firma'].length) {
+      return {
+        contact_type: 'Organization',
+        preferred_language: 'de_DE',
+        organization_name: row['firma'],
+        ...notificationRules,
+      }
+    } 
+
+    return;
   },
   email: (row) => (contactId = 0) => ({
     contact_id: contactId,
