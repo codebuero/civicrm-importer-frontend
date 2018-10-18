@@ -25,7 +25,6 @@ class ErrorNotificationHandler extends React.Component {
   }
 
   render() {
-    
       const { apiAvailable, importRuns, importErrors } = this.props
       return (
       <div>
@@ -44,13 +43,11 @@ class ErrorNotificationHandler extends React.Component {
         <ErrorNotification
           mode='is-warning'
           title='Finished with errors, see console.'
-          content={this.state.importErrors}
+          content={importErrors}
         />)
       }
       </div>)
   }
 }
-
-
 
 export default ErrorNotificationHandler
