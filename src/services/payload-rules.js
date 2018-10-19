@@ -18,6 +18,15 @@ import {
   DATE
 } from './key-mapping'
 
+const { EMAIL_1, EMAIL_2 } = { EMAIL_1: 'Email (1)', EMAIL_2: 'Email (2)'}
+
+function extractEmployerId(employerId) {
+  if (employerId !== undefined || employerId !== 0 || employerId !== "0") {
+    return employerId
+  }
+  return undefined
+}
+
 function parseInstrument(row){
   const source = row['Quelle']
   const sourceIdMap = {
@@ -71,11 +80,7 @@ const altrujaPayload = {
       do_not_trade: noContact,
     }
 
-    let employer_id
-
-    if (employerId !== undefined || employerId !== 0 || employerId !== "0") {
-      employer_id = employerId
-    }
+    const employer_id = extractEmployerId(employerId)
 
     return {
       contact_type: 'Individual',
@@ -145,10 +150,13 @@ const altrujaPayload = {
 }
 
 
-const onlycontactsPayload = {
-  contact: () => {
-    const prefixId = row['Titel'] === 'Frau' ? 2 : 1;
-    const genderId = row['Titel'] === 'Frau' ? 1 : 2;
+const journalistsPayload = {
+  contact: (row) => (employerId) => {
+    let prefixId
+    let genderId
+
+    if (row['Titel']) {  prefixId = (row['Titel'] === 'Frau') ? 2 : 1; }
+    if (row['Titel']) {  genderId = (row['Titel'] === 'Frau') ? 1 : 2; }
 
     const notificationRules = {
       do_not_mail: 0,
@@ -159,28 +167,71 @@ const onlycontactsPayload = {
       do_not_trade: 1,
     }
 
+    const employer_id = extractEmployerId(employerId)
+
+    const SPLIT_CHARACTER = ' '
+    const first = row['Name'].split(SPLIT_CHARACTER).slice(0, -1).join(' ')
+    const last = row['Name'].split(SPLIT_CHARACTER).slice(-1)[0] 
+
     return {
       contact_type: 'Individual',
       preferred_language: 'de_DE',
-      first_name: row['Vorname'],
-      last_name: row['Nachname'],
+      first_name: first,
+      last_name: last,
       prefix_id: prefixId,
       gender_id: genderId,
+      employer_id,
       ...notificationRules,
     }
   },
   address: () => {
 
   },
-  email: () => {
-
-  },
+  email: (row) => (contactId = 0) => ({
+    contact_id: contactId,
+    email: row['Email'],
+    location_type_id: 2,
+    is_primary: 1,
+  }),
   phone: () => {
 
   },
   donation: () => {
 
   }
+}
+
+
+const supporterPayload = {
+  contact: (row) => {
+    console.log(row)
+    const notificationRules = {
+      do_not_mail: 0,
+      do_not_email: 0,
+      do_not_phone: 0,
+      is_opt_out: 0,
+      do_not_sms: 0,
+      do_not_trade: 1,
+    }
+
+    const SPLIT_CHARACTER = ' '
+    const first = row['Name (First Last)'].split(SPLIT_CHARACTER).slice(0, -1).join(' ')
+    const last = row['Name (First Last)'].split(SPLIT_CHARACTER).slice(-1)[0] 
+
+    return {
+      contact_type: 'Individual',
+      preferred_language: 'de_DE',
+      first_name: first,
+      last_name: last,
+      ...notificationRules,
+    }
+  },
+  email: (row) => (contactId = 0) => ({
+    contact_id: contactId,
+    email: row[EMAIL_1],
+    location_type_id: 1,
+    is_primary: 1,
+  }),
 }
 
 const groupPayload = (groupId) => (contactId) => ({
@@ -199,7 +250,8 @@ const tagPayload = (tagIds = []) => {
 
 const rules = {
   altruja: altrujaPayload,
-  onlycontacts: onlycontactsPayload,
+  journalists: journalistsPayload,
+  supporter: supporterPayload,
 }
 
 
@@ -209,7 +261,8 @@ const getPayloadRules = (key) => {
 
 export {
   altrujaPayload,
-  onlycontactsPayload,
+  journalistsPayload,
+  supporterPayload,
   groupPayload,
   tagPayload,
   parseInstrument,

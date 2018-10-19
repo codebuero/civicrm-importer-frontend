@@ -32,10 +32,15 @@ const DEFAULT_STATE = {
           "calculateTagsFromContributionType": false,
         ],
       },
-      onlycontacts: {
-        key: 'onlycontacts',
-        description: 'A list of contacts without account data',
-        disabled: true,
+      journalists: {
+        key: 'journalists',
+        description: 'A list of contacts for press lists.',
+        disabled: false,
+      },
+      supporter: {
+        key: 'supporter',
+        description: 'A list of contacts from newsletter lists.',
+        disabled: false,
       }
     }
   },
