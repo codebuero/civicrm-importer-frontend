@@ -85,16 +85,25 @@ const ImportService = {
     return Promise.reject(new Error(`Couldnt create new account for email ${email}`));
   },
   doImport: async function(account) {
-      const existingUserId = await rest.checkIfEmailExists(account.emailAddress)
+      const existingUserId = await rest.checkIfEmailExists(account.email().email)
+
+      // existence promise: if rejected, account does not exist. if resolved, it contains an id. 
+
+      /*   const existingContactId = await account.exists()
+       *   
+       *   if (!existingContactId) return await account.create() - incl. all contact related entities and contributions
+       *   
+       *   account.setContactId(existingContactId)
+       *   await account.createContribution()
+       */
 
       if (!existingUserId) {
-
         let organizationId
         if (account['organization']) {
           const organizationPayload = account['organization']
           const { is_error, id: orgaId } = await rest.createEntity('contact', organizationPayload)
           if (is_error || !orgaId) {
-            return this.rejectWithEmail(account.emailAddress);
+            return this.rejectWithEmail(account.email().email);
           }
           organizationId = orgaId
         }
@@ -103,7 +112,7 @@ const ImportService = {
         const { is_error, id } = await rest.createEntity('contact', contactPayload)
 
         if (is_error || !id) {
-          return this.rejectWithEmail(account.emailAddress);
+          return this.rejectWithEmail(account.email().email);
         }
 
         for (const k of PAYLOAD_ALLOW_LIST) {
@@ -113,7 +122,7 @@ const ImportService = {
 
             for(let p of payloadsWithContactId) {
               const pRes = await rest.createEntity(k, p)
-              if (pRes.is_error) return this.rejectWithEmail(account.emailAddress);
+              if (pRes.is_error) return this.rejectWithEmail(account.email().email);
             }
             continue;
           }
@@ -123,7 +132,7 @@ const ImportService = {
             const payloadWithContactId = account[k](id);
             if (this._filterContent(k, payloadWithContactId)) {
               const pRes = await rest.createEntity(k, payloadWithContactId)
-              if (pRes.is_error) return this.rejectWithEmail(account.emailAddress);
+              if (pRes.is_error) return this.rejectWithEmail(account.email().email);
             } 
           }
         }
@@ -132,7 +141,7 @@ const ImportService = {
         const contributionExists = await rest.checkForExistingContribution(existingUserId, payload['total_amount'], payload['receive_date'])
         if (!contributionExists) {
           const pRes = await rest.createEntity('contribution', payload)
-          if (pRes.is_error) return this.rejectWithEmail(account.emailAddress);
+          if (pRes.is_error) return this.rejectWithEmail(account.email().email);
         }
       }
 
