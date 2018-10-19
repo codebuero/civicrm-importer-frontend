@@ -1,8 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import { altrujaPayload, onlycontactsPayload } from '../services/payload-rules'
-
 /*
 *  1. In case of xlsx and multiple sheets, sheet selection 
 *  2. In any cases: Preview of data, wether of selected sheet or the whole file (csv case)
