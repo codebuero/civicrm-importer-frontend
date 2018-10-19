@@ -19,7 +19,7 @@ import {
 } from './key-mapping'
 
 function parseInstrument(row){
-  const source = row['source']
+  const source = row['Quelle']
   const sourceIdMap = {
     'Online (Wirecard/Kreditkarte)': 10,
     'Online (Wirecard/Lastschrift)': 9,
@@ -31,7 +31,7 @@ function parseInstrument(row){
 }
 
 function parseFinancialType(row){
-  const type = row['rectype']
+  const type = row['Spenden-Typ']
 
   const typeIdMap = {
     'Einzelspende': 1,
@@ -43,7 +43,7 @@ function parseFinancialType(row){
 }
 
 function calculateTagsFromDonation(row, availableTags) {
-  const type = row['rectype'];
+  const type = row['Spenden-Typ'];
 
   if (!type) return [];
 
@@ -58,9 +58,9 @@ function calculateTagsFromDonation(row, availableTags) {
 
 const altrujaPayload = {
   contact: (row) => (employerId) => {
-    const noContact = row['newsletter'] === 'Nein' ? 1 : 0;
-    const prefixId = row['anrede'] === 'Frau' ? 2 : 1;
-    const genderId = row['anrede'] === 'Frau' ? 1 : 2;
+    const noContact = row['Kontakt erlaubt'] === 'Nein' ? 1 : 0;
+    const prefixId = row['Anrede'] === 'Frau' ? 2 : 1;
+    const genderId = row['Anrede'] === 'Frau' ? 1 : 2;
 
     const notificationRules = {
       do_not_mail: noContact,
@@ -80,8 +80,8 @@ const altrujaPayload = {
     return {
       contact_type: 'Individual',
       preferred_language: 'de_DE',
-      first_name: row['vorname'],
-      last_name: row['nachname'],
+      first_name: row['Vorname'],
+      last_name: row['Nachname'],
       prefix_id: prefixId,
       gender_id: genderId,
       employer_id,
@@ -90,7 +90,7 @@ const altrujaPayload = {
 
   },
   organization: (row) => {
-    const noContact = row['newsletter'] === 'Nein' ? 1 : 0;
+    const noContact = row['Kontakt erlaubt'] === 'Nein' ? 1 : 0;
     const notificationRules = {
       do_not_mail: noContact,
       do_not_email: noContact,
@@ -100,11 +100,11 @@ const altrujaPayload = {
       do_not_trade: noContact,
     }
 
-    if (row['firma'] && row['firma'].length) {
+    if (row['Firma'] && row['Firma'].length) {
       return {
         contact_type: 'Organization',
         preferred_language: 'de_DE',
-        organization_name: row['firma'],
+        organization_name: row['Firma'],
         ...notificationRules,
       }
     } 
@@ -113,31 +113,31 @@ const altrujaPayload = {
   },
   email: (row) => (contactId = 0) => ({
     contact_id: contactId,
-    email: row['email'],
+    email: row['Email'],
     location_type_id: 1,
     is_primary: 1,
   }),
   address: (row) => (contactId = 0) => ({
     contact_id: contactId,
-    street_address: row['street'],
+    street_address: row['Strasse'],
     location_type_id: 1,
     is_primary: 1,
-    city: row['city'],
-    postal_code: row['postcode'],
+    city: row['Ort'],
+    postal_code: row['Postleitzahl'],
     country_id: row['CountryId'],
   }),
   customValue: (row) => (contactId = 0) => ({
     entity_id: contactId,
-    custom_1: row['sl_iban'],
-    custom_2: row['sl_bic']
+    custom_1: row['IBAN'],
+    custom_2: row['BIC']
   }),
   contribution: (row) => (contactId = 0) => ({ 
     contact_id: contactId,
     financial_type_id: parseFinancialType(row),
     payment_instrument_id: parseInstrument(row),
-    receive_date: moment(row['datum'], 'DD.MM.YYYY').startOf('day').format(),
-    total_amount: row['abetrag'].replace(',',''),
-    trxn_id: row['spende_id'],
+    receive_date: moment(row['Datum'], 'DD.MM.YYYY').startOf('day').format(),
+    total_amount: row['Spendenbetrag'].replace(',',''),
+    trxn_id: row['Spenden-ID'],
     currency: 'EUR',
     source: 'Altruja',
     contribution_status_id: 1,

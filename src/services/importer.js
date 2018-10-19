@@ -41,11 +41,11 @@ const ImportService = {
         'Vereinigtes Königreich': '1226',
       };
 
-      return countryIds[row['country']];
+      return countryIds[row['Land']];
   },
   _mapRowToRules: function(row, ruleSetTitle, groupId, selectedTags) {
     let out = {
-      emailAddress: row['email'],
+      emailAddress: row['Email'],
       countryId: this._getCountryId(row),
     };
 
