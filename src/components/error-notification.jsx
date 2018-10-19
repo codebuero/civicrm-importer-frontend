@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 const ErrorNotification = ({ title, content = [], mode = 'is-success' }) => 
   (<div className={`notification ${mode} alertbox`}>
     {title}
-    {content.length && (
+    {(content.length > 0) && (
       <div className="content">
         <ol style={{ fontSize: '16px', textAlign: 'left'}}>
           {content.map((e, idx) => (<li key={idx}>{e.message}</li>))}
