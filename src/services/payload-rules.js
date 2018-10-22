@@ -152,12 +152,6 @@ const altrujaPayload = {
 
 const journalistsPayload = {
   contact: (row) => (employerId) => {
-    let prefixId
-    let genderId
-
-    if (row['Titel']) {  prefixId = (row['Titel'] === 'Frau') ? 2 : 1; }
-    if (row['Titel']) {  genderId = (row['Titel'] === 'Frau') ? 1 : 2; }
-
     const notificationRules = {
       do_not_mail: 0,
       do_not_email: 0,
@@ -178,11 +172,12 @@ const journalistsPayload = {
       preferred_language: 'de_DE',
       first_name: first,
       last_name: last,
-      prefix_id: prefixId,
-      gender_id: genderId,
       employer_id,
       ...notificationRules,
     }
+  },
+  organization: () => {
+
   },
   address: () => {
 
@@ -196,15 +191,11 @@ const journalistsPayload = {
   phone: () => {
 
   },
-  donation: () => {
-
-  }
 }
 
 
 const supporterPayload = {
-  contact: (row) => {
-    console.log(row)
+  contact: (row) => () => {
     const notificationRules = {
       do_not_mail: 0,
       do_not_email: 0,
@@ -212,6 +203,7 @@ const supporterPayload = {
       is_opt_out: 0,
       do_not_sms: 0,
       do_not_trade: 1,
+      preferred_communication_method: 2,
     }
 
     const SPLIT_CHARACTER = ' '
