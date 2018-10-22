@@ -117,6 +117,7 @@ const ImportService = {
 
         for (const k of PAYLOAD_ALLOW_LIST) {
           // the tag payloads are in an array of functions, not only a function
+          if (!account[k]) continue
           if (Array.isArray(account[k])) {
             const payloadsWithContactId = account[k].map(p => p(id))
 
@@ -137,6 +138,7 @@ const ImportService = {
           }
         }
       } else {
+        if (!account['contribution']) return;
         const payload = account['contribution'](existingUserId)
         const contributionExists = await rest.checkForExistingContribution(existingUserId, payload['total_amount'], payload['receive_date'])
         if (!contributionExists) {
