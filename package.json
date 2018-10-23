@@ -4,8 +4,8 @@
   "description": "",
   "scripts": {
     "test": "jest test/*.test.js --notify --config=jest.config.js",
-    "watch": "webpack --watch --env.CONFIG_FILE_PATH=$CONFIG_FILE_PATH",
-    "deploy": "webpack && zip importer-pkg.zip index.html public/* && scp importer-pkg.zip $CIVI_USER@$CIVI_IP:~/importer-pkg.zip && rm importer-pkg.zip"
+    "watch": "webpack-cli --watch --watch-poll=1000",
+    "deploy": "webpack-cli && zip importer-pkg.zip index.html public/* && scp importer-pkg.zip $CIVI_USER@$CIVI_IP:~/importer-pkg.zip && rm importer-pkg.zip"
   },
   "author": "andirotter",
   "license": "ISC",
@@ -14,26 +14,29 @@
     "test": "test/"
   },
   "devDependencies": {
-    "babel": "^6.5.1",
-    "babel-core": "^6.5.1",
-    "babel-loader": "^6.2.2",
+    "@babel/core": "^7.1.2",
+    "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+    "@babel/preset-env": "^7.1.0",
+    "@babel/preset-react": "^7.0.0",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^8.0.4",
     "babel-plugin-transform-decorators-legacy": "^1.3.4",
-    "babel-preset-es2015": "^6.5.0",
-    "babel-preset-react": "^6.5.0",
-    "babel-preset-stage-1": "^6.5.0",
     "babel-register": "^6.7.2",
     "css-loader": "^0.28.11",
     "eslint-plugin-react": "^6.10.3",
     "extract-text-webpack-plugin": "^2.1.2",
     "file-loader": "^0.11.1",
     "jest": "^23.6.0",
+    "serviceworker-webpack-plugin": "^1.0.1",
     "style-loader": "^0.16.1",
     "stylus": "^0.54.5",
     "stylus-loader": "^3.0.2",
-    "webpack": "^3.12.0"
+    "webpack": "^4.19.1",
+    "webpack-cli": "^3.1.2",
+    "webpackbar": "^2.6.3"
   },
   "dependencies": {
-    "babel-polyfill": "^6.26.0",
+    "@babel/polyfill": "^7.0.0",
     "bluebird": "^3.5.1",
     "bulma": "^0.7.1",
     "civicrm": "https://github.com/codebuero/node-civicrm.git#9ca52ebabd105665b641532caf6f4d08227fb4bd",

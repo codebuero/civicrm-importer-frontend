@@ -2,46 +2,82 @@ var path = require('path')
 var webpack = require('webpack')
 var NODE_MODULES_PATH = path.resolve(__dirname, 'node_modules')
 var ExtractTextPlugin = require('extract-text-webpack-plugin')
+const ServiceWorkerWebpackPlugin = require('serviceworker-webpack-plugin')
+const Progress = require('webpackbar')
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
-module.exports = (env) => {
+module.exports = (env = {}, argv) => {
   return {
+    mode: 'development',
     devtool: 'eval',
-    entry: ["babel-polyfill", "./src/client.js"],
+    context: path.join(__dirname, 'src'),
+    entry: {
+      app: ["@babel/polyfill", "./client.js"]
+    },
     output: {
       path: path.join(__dirname, 'public'),
       filename: 'bundle.js',
       publicPath: '/static/',
       libraryTarget: 'var',
       library: 'XLSX',
+      crossOriginLoading: 'anonymous'
     },
     plugins: [
-      new webpack.NoEmitOnErrorsPlugin(),
-      new ExtractTextPlugin('styles.css'),
       new webpack.DefinePlugin({
-        IMPORTER_CONFIG_FILE_PATH: JSON.stringify(env.CONFIG_FILE_PATH),
+        'IMPORTER_CONFIG_FILE_PATH': JSON.stringify(process.env.CONFIG_FILE_PATH),
+      }),
+      new MiniCssExtractPlugin({
+        // Options similar to the same options in webpackOptions.output
+        // both options are optional
+        filename: "[name].css",
+        chunkFilename: "[id].css"
+      }),
+      new ServiceWorkerWebpackPlugin({
+        entry: path.join(__dirname, 'src/sw.js')
+      }),
+      new Progress({
+          color: '#5C95EE'
       })
     ],
     resolve: {
-      extensions: ['.js', '.jsx']
+      extensions: ['.js', '.jsx'],
+      modules: [path.join(__dirname, 'src'), 'node_modules'],
     },
     module: {
-      noParse: [
-        /xlsx.core.min.js/,
-        /xlsx.full.min.js/,
-      ],
-      loaders: [{
-            test: /\.js|\.jsx?$/,
-            loader: 'babel-loader',
-            exclude: NODE_MODULES_PATH,
-          },
-          { 
-            test: /\.css|\.styl$/, 
-            loader: ExtractTextPlugin.extract({
-                fallbackLoader: 'style-loader',
-                loader: "css-loader!stylus-loader"
-            }) 
-          },
-          ]
+      rules: [{
+              test: /\.js|\.jsx?$/,
+              loader: 'babel-loader',
+              exclude: NODE_MODULES_PATH,
+            },
+            { 
+              test: /\.styl$/, 
+              use: [
+                  {
+                    loader: "style-loader" // creates style nodes from JS strings
+                  },
+                  {
+                    loader: "css-loader" // translates CSS into CommonJS
+                  },
+                  {
+                    loader: "stylus-loader" // compiles Stylus to CSS
+                  }
+              ],
+            },            
+            {
+              test: /\.css$/,
+              use: [
+                {
+                  loader: MiniCssExtractPlugin.loader,
+                  options: {
+                    // you can specify a publicPath here
+                    // by default it use publicPath in webpackOptions.output
+                    publicPath: '../public'
+                  }
+                },
+                "css-loader"
+              ]
+            }
+            ]
     },
     node: {
       fs: 'empty',
