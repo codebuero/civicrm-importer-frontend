@@ -17,7 +17,7 @@ module.exports = (env = {}, argv) => {
     output: {
       path: path.join(__dirname, 'public'),
       filename: 'bundle.js',
-      publicPath: '/static/',
+      publicPath: './',
       libraryTarget: 'var',
       library: 'XLSX',
       crossOriginLoading: 'anonymous'
@@ -33,7 +33,8 @@ module.exports = (env = {}, argv) => {
         chunkFilename: "[id].css"
       }),
       new ServiceWorkerWebpackPlugin({
-        entry: path.join(__dirname, 'src/sw.js')
+        entry: path.join(__dirname, 'src/sw.js'),
+        publicPath: '/public'
       }),
       new Progress({
           color: '#5C95EE'
