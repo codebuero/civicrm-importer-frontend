@@ -1,4 +1,5 @@
 import moment from 'moment'
+import { get } from 'lodash'
 import {
   CONTRIBUTION_SOURCE,
   CONTRIBUTION_TYPE,
@@ -164,8 +165,8 @@ const journalistsPayload = {
     const employer_id = extractEmployerId(employerId)
 
     const SPLIT_CHARACTER = ' '
-    const first = row['Name'].split(SPLIT_CHARACTER).slice(0, -1).join(' ')
-    const last = row['Name'].split(SPLIT_CHARACTER).slice(-1)[0] 
+    const first = get(row, 'Name (First Last)', '').trim().split(SPLIT_CHARACTER).slice(0, -1).join(' ')
+    const last = get(row, 'Name (First Last)', '').trim().split(SPLIT_CHARACTER).slice(-1)[0] 
 
     return {
       contact_type: 'Individual',
@@ -207,8 +208,8 @@ const supporterPayload = {
     }
 
     const SPLIT_CHARACTER = ' '
-    const first = row['Name (First Last)'].split(SPLIT_CHARACTER).slice(0, -1).join(' ')
-    const last = row['Name (First Last)'].split(SPLIT_CHARACTER).slice(-1)[0] 
+    const first = get(row, 'Name (First Last)', '').trim().split(SPLIT_CHARACTER).slice(0, -1).join(' ')
+    const last = get(row, 'Name (First Last)', '').trim().split(SPLIT_CHARACTER).slice(-1)[0] 
 
     return {
       contact_type: 'Individual',
