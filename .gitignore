@@ -3,5 +3,8 @@ dist
 public/bundle.js
 public/styles.css
 public/config.json
+public/sw.js
+public/app.css
 *.zip
 *.env
+.babel-cache
