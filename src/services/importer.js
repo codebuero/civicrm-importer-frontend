@@ -100,8 +100,17 @@ const ImportService = {
   rejectWithEmail(email) {
     return Promise.reject(new Error(`Couldnt create new account for email ${email}`));
   },
+  _extractEmails(account) {
+    if (Array.isArray(account.email))
+      return account.email.map(a => a.email().email)
+    if (isString(account.email().email)) return account.email().email
+  },
+  _checkForAccountExistence: async function(emails = []) {
+
+  },
   doImport: async function(account) {
       const existingUserId = await rest.checkIfEmailExists(account.email().email)
+      const existingUserId = await this._checkForAccountExistence(this._extractEmails(account))
 
       // existence promise: if rejected, account does not exist. if resolved, it contains an id. 
 
