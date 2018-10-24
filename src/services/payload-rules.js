@@ -233,13 +233,12 @@ const groupPayload = (groupId) => (contactId) => ({
   status: 'Added'
 })
 
-const tagPayload = (tagIds = []) => {
-  return tagIds.map((tagId) => (contactId) => ({
+const tagPayload = (tagIds = []) => 
+  tagIds.map((tagId) => (contactId) => ({
     entity_table: 'civicrm_contact',
     entity_id: contactId,
     tag_id: tagId
   }))
-}
 
 const rules = {
   altruja: altrujaPayload,
