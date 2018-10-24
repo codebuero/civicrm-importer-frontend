@@ -1,4 +1,5 @@
 import Promise from 'bluebird'
+import { isString } from 'lodash'
 import { 
   groupPayload, 
   tagPayload, 
@@ -11,10 +12,10 @@ import { rest } from './rest'
 const PAYLOAD_ALLOW_LIST = ['address','email','contribution','customValue', 'group_contact', 'entity_tag']
 
 const ImportService = {
-  mapDataOnRuleset: function(data = [], ruleSet = {}, groupId = 0, selectedTags = []) {
-    return data.map(row => this._mapRowToRules(row, ruleSet, groupId, selectedTags));
+  mapDataOnRuleset: function(data = [], ruleSet = {}, groupId = 0, selectedTags = [], countries = []) {
+    return data.map(row => this._mapRowToRules(row, ruleSet, groupId, selectedTags,countries));
   },
-  _getCountryId: function(row) {
+  _getCountryIdForFullCountryName: function (countryName) {
       const countryIds = {
         'Deutschland': '1082',
         'Belgien': '1020',
@@ -40,15 +41,27 @@ const ImportService = {
         'Vereinigte Staaten': '1228',
         'Vereinigtes Königreich': '1226',
       };
-
-      return countryIds[row['Land']];
+      return countryIds[countryName];
   },
-  _mapRowToRules: function(row, ruleSetTitle, groupId, selectedTags) {
+  _getCountryIdForCountryISOCode: function(countryIsoCode, availableCountries) {
+    const foundCountry = availableCountries.filter(c => c['iso_code'] === countryIsoCode)
+    if (!foundCountry.length) return
+    return foundCountry[0]['id']
+  },
+  _getCountryId: function(country, availableCountries) {
+      if (!isString(country)) return
+
+      if (country.length === 2) {
+        return this._getCountryIdForCountryISOCode(country, availableCountries)
+      }
+      return this._getCountryIdForFullCountryName(country)    
+  },
+  _mapRowToRules: function(row, ruleSetTitle, groupId, selectedTags, countries) {
     let out = {
       emailAddress: row['Email'],
-      countryId: this._getCountryId(row),
+      countryId: this._getCountryId(row['Land'] || row['Country'], countries),
     };
-
+    
     if (groupId) {
       out = { 
         ...out,
@@ -68,6 +81,7 @@ const ImportService = {
     keysToMatch.forEach((key) => {
       out[key] = ruleSet[key](row);
     });
+    console.log(out)
 
     return out;
   },

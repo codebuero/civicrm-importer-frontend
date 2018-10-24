@@ -167,31 +167,50 @@ const journalistsPayload = {
     const SPLIT_CHARACTER = ' '
     const first = get(row, 'Name (First Last)', '').trim().split(SPLIT_CHARACTER).slice(0, -1).join(' ')
     const last = get(row, 'Name (First Last)', '').trim().split(SPLIT_CHARACTER).slice(-1)[0] 
+    const language = get(row, 'Preferred Language', 'en_EN')
 
     return {
       contact_type: 'Individual',
-      preferred_language: 'de_DE',
+      preferred_language: language,
       first_name: first,
       last_name: last,
       employer_id,
+      position: row['Position'],
       ...notificationRules,
     }
   },
-  organization: () => {
+  organization: (row) => {
+    const notificationRules = {
+      do_not_mail: 0,
+      do_not_email: 0,
+      do_not_phone: 0,
+      is_opt_out: 0,
+      do_not_sms: 0,
+      do_not_trade: 1,
+    }
 
-  },
-  address: () => {
+    if (row['Organisation'] && row['Organisation'].length) {
+      return {
+        contact_type: 'Organization',
+        organization_name: row['Organisation'],
+        ...notificationRules,
+      }
+    } 
 
+    return;
   },
+  address: (row) => (contactId) => ({
+    contact_id: contactId,
+    location_type_id: 2,
+    is_primary: 1,
+    country_id: row['CountryId'],    
+  }),
   email: (row) => (contactId = 0) => ({
     contact_id: contactId,
     email: row['Email'],
     location_type_id: 2,
     is_primary: 1,
   }),
-  phone: () => {
-
-  },
 }
 
 

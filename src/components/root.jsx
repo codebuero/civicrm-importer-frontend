@@ -234,9 +234,9 @@ export default class CiviCrmImporter extends React.Component {
       importing: true,
     })
 
-    const { selectedRuleSet } = this.state;
+    const { selectedRuleSet, countries } = this.state;
     const { data, selectedGroup, selectedTags } = this.state.importparameter;
-    const importData = ImporterService.mapDataOnRuleset(data, selectedRuleSet, selectedGroup, selectedTags);
+    const importData = ImporterService.mapDataOnRuleset(data, selectedRuleSet, selectedGroup, selectedTags, countries);
 
     let i = 0;
     const errors = [];
