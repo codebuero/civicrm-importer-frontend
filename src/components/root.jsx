@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import Promise from 'bluebird'
 import { Set } from 'immutable'
 
 import FileUploadInput from './file-upload-input'
@@ -109,13 +110,14 @@ export default class CiviCrmImporter extends React.Component {
   async initialRequest() {
     try {
       await rest.testApi() 
-      return this.setState({
+      this.setState({
         apiAvailable: true,
       })
     } catch(e) {
-      return this.setState({
+      this.setState({
         apiAvailable: false
       })
+      return
     }
 
     let prefixes, countries = []
@@ -125,14 +127,13 @@ export default class CiviCrmImporter extends React.Component {
       if (!prefixes.values.length || !countries.values.length) {
         throw new Error('No prefixes nor countries found.')
       }
+      this.setState({
+        prefixes: prefixes.values,
+        countries: countries.values
+      })
     } catch(e) {
       return console.error(e)
     }
-
-    this.setState({
-      prefixes: prefixes.values,
-      countries: countries.values
-    })
 
   }
 
