@@ -168,6 +168,7 @@ const journalistsPayload = {
     const first = get(row, 'Name (First Last)', '').trim().split(SPLIT_CHARACTER).slice(0, -1).join(' ')
     const last = get(row, 'Name (First Last)', '').trim().split(SPLIT_CHARACTER).slice(-1)[0] 
     const language = get(row, 'Preferred Language', 'en_EN')
+    const job_title = get(row, 'Position', undefined)
 
     return {
       contact_type: 'Individual',
@@ -175,7 +176,7 @@ const journalistsPayload = {
       first_name: first,
       last_name: last,
       employer_id,
-      position: row['Position'],
+      job_title,
       ...notificationRules,
     }
   },
