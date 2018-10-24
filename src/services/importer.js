@@ -56,18 +56,23 @@ const ImportService = {
       }
       return this._getCountryIdForFullCountryName(country)    
   },
-  _mapRowToRules: function(row, ruleSetTitle, groupId, selectedTags, countries) {
+  _enhanceWithGroupPayload: function(basePayload, groupId = 0) {
+    if (!groupId) return basePayload
+
+    return { 
+        ...basePayload,
+        group_contact: groupPayload(groupId),
+      }
+    }
+  },
+  _mapRowToRules: function(row, ruleSetTitle, groupId = 0, selectedTags, countries) {
     let out = {
       emailAddress: row['Email'],
       countryId: this._getCountryId(row['Land'] || row['Country'], countries),
     };
-    
-    if (groupId) {
-      out = { 
-        ...out,
-        group_contact: groupPayload(groupId),
-      }
-    }
+
+    out = this._enhanceWithGroupPayload(out, groupId)
+
 
     if (selectedTags.length) {
       out = { 
@@ -78,10 +83,7 @@ const ImportService = {
 
     const ruleSet = getPayloadRules(ruleSetTitle)
     const keysToMatch = Object.keys(ruleSet);
-    keysToMatch.forEach((key) => {
-      out[key] = ruleSet[key](row);
-    });
-    console.log(out)
+    const out = keysToMatch.reduce((acc, key) => ({  ...acc, [key]: ruleSet[key](row) }), {})
 
     return out;
   },
@@ -155,10 +157,10 @@ const ImportService = {
         if (!account['contribution']) return;
         const payload = account['contribution'](existingUserId)
         const contributionExists = await rest.checkForExistingContribution(existingUserId, payload['total_amount'], payload['receive_date'])
-        if (!contributionExists) {
-          const pRes = await rest.createEntity('contribution', payload)
-          if (pRes.is_error) return this.rejectWithEmail(account.email().email);
-        }
+        if (contributionExists) return 
+        const pRes = await rest.createEntity('contribution', payload)
+        if (pRes.is_error) return this.rejectWithEmail(account.email().email);
+        
       }
 
       return;
