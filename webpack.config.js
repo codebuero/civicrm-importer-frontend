@@ -1,10 +1,12 @@
-var path = require('path')
-var webpack = require('webpack')
-var NODE_MODULES_PATH = path.resolve(__dirname, 'node_modules')
-var ExtractTextPlugin = require('extract-text-webpack-plugin')
+const webpack = require('webpack')
+const path = require('path')
+
+const ExtractTextPlugin = require('extract-text-webpack-plugin')
 const ServiceWorkerWebpackPlugin = require('serviceworker-webpack-plugin')
 const Progress = require('webpackbar')
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+
+const NODE_MODULES_PATH = path.join(__dirname, 'node_modules')
 
 module.exports = (env = {}, argv) => {
   return {
@@ -45,10 +47,14 @@ module.exports = (env = {}, argv) => {
       modules: [path.join(__dirname, 'src'), 'node_modules'],
     },
     module: {
-      rules: [{
+      rules: [
+            {
               test: /\.js|\.jsx?$/,
               loader: 'babel-loader',
               exclude: NODE_MODULES_PATH,
+              options: {
+                cacheDirectory: './.babel-cache'
+              },
             },
             { 
               test: /\.styl$/, 
