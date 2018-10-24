@@ -27,10 +27,6 @@ const DEFAULT_STATE = {
         key: 'altruja', 
         description: 'For exports of altruja donation summaries',
         disabled: false,
-        options: [
-          "calculateGroupFromNewsletterAndSite": false,
-          "calculateTagsFromContributionType": false,
-        ],
       },
       journalists: {
         key: 'journalists',
@@ -99,13 +95,13 @@ export default class CiviCrmImporter extends React.Component {
       await rest.loadApiConfiguration()
     } catch(e) {
       console.error('Error on App Initialization');
+      console.error('Broken or missing config.json');
       return console.error(e)
     }
 
     try {
       await this.initialRequest();
     } catch(e) {
-        console.error('Error on initial request');
         console.error(err)
     }
   }
@@ -179,7 +175,7 @@ export default class CiviCrmImporter extends React.Component {
     const currentTopic = e.target.dataset['currentTopic']; 
     const idx = this.state.header.topics.findIndex(t => t.key === currentTopic);
     const newTopicIdx = (idx < this.state.header.topics.length - 1) ? idx + 1 : 0; 
-    this.setState(({ ...state, ui }) => ({ 
+    this.setState(({ ui, ...state }) => ({ 
       ...state, 
       ui: { 
         ...ui, 
@@ -289,7 +285,7 @@ export default class CiviCrmImporter extends React.Component {
               selectFile={this.selectFile}
               toggleNext={(mode) => this.setState(({ ui: { enableNext: mode, selectedTopic: 'upload', enabledHeaderTopics: this.state.ui.enabledHeaderTopics.add('select') }}))}
               next={() => 
-                this.setState(({ ...state, ui }) => ({ ...state, ui: { ...ui, enableNext: false, selectedTopic: 'select' }}))
+                this.setState(({ ui, ...state }) => ({ ...state, ui: { ...ui, enableNext: false, selectedTopic: 'select' }}))
               }
             />
           )}
