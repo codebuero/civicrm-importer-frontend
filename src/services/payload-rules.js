@@ -21,6 +21,8 @@ import {
 
 const { EMAIL_1, EMAIL_2 } = { EMAIL_1: 'Email (1)', EMAIL_2: 'Email (2)'}
 
+const PREFERRED_LANGUAGE_INTERNATIONAL_JOURNALISTS = 'en_GB'
+
 function extractEmployerId(employerId) {
   if (employerId !== undefined || employerId !== 0 || employerId !== "0") {
     return employerId
@@ -167,7 +169,7 @@ const journalistsPayload = {
     const SPLIT_CHARACTER = ' '
     const first = get(row, 'Name (First Last)', '').trim().split(SPLIT_CHARACTER).slice(0, -1).join(' ')
     const last = get(row, 'Name (First Last)', '').trim().split(SPLIT_CHARACTER).slice(-1)[0] 
-    const language = get(row, 'Preferred Language', 'en_EN')
+    const language = get(row, 'Preferred Language', PREFERRED_LANGUAGE_INTERNATIONAL_JOURNALISTS)
     const job_title = get(row, 'Position', undefined)
 
     return {
@@ -190,9 +192,12 @@ const journalistsPayload = {
       do_not_trade: 1,
     }
 
+    const language = get(row, 'Preferred Language', PREFERRED_LANGUAGE_INTERNATIONAL_JOURNALISTS)
+
     if (row['Organisation'] && row['Organisation'].length) {
       return {
         contact_type: 'Organization',
+        preferred_language: language,
         organization_name: row['Organisation'],
         ...notificationRules,
       }
@@ -200,18 +205,51 @@ const journalistsPayload = {
 
     return;
   },
-  address: (row) => (contactId) => ({
+  address: (row) => (contactId) => {  
+    return {
+      contact_id: contactId,
+      location_type_id: 2,
+      is_primary: 1,
+      country_id: row.countryId,    
+    }
+  },
+  email_work: (row) => (contactId = 0) => ({
     contact_id: contactId,
+    email: row['Email (1)'],
     location_type_id: 2,
     is_primary: 1,
-    country_id: row['CountryId'],    
   }),
-  email: (row) => (contactId = 0) => ({
-    contact_id: contactId,
-    email: row['Email'],
-    location_type_id: 2,
-    is_primary: 1,
-  }),
+  email_other: (row) => (contactId = 0) => {
+    const email = get(row, 'Email (2)', '')
+    if (!email) return {}
+    return {
+      contact_id: contactId,
+      email,
+      location_type_id: 4,
+      is_primary: 0,
+  }},
+  phone_work: (row) => (contactId = 0) => {
+    const phone = get(row, 'Phone (office, personal or newsdesk)', '')
+    if (!phone) return {}
+    return{
+      contact_id: contactId,
+      phone: phone,
+      location_type_id: 2,
+      phone_type_id: 1,
+      is_primary: 1,
+    }
+  },
+  phone_mobile: (row) => (contactId = 0) => {
+    const phone = get(row, 'Phone (mobile or satellite)', '')
+    if (!phone) return {}
+    return {
+      contact_id: contactId,
+      phone: phone,
+      location_type_id: 2,
+      phone_type_id: 2,
+      is_primary: 0,    
+    }
+  }
 }
 
 
