@@ -107,21 +107,38 @@ const ImportService = {
     }
     return true;
   }, 
-  rejectWithEmail(email) {
-    return Promise.reject(new Error(`Couldnt create new account for email ${email}`));
+  rejectWithEmail(emails = [], errors = []) {
+    const err = new Error(`Couldnt create new account for email ${emails.join(',')}`)
+    err.data = errors
+    return Promise.reject(err);
   },
   _extractEmails(account) {
-    if (Array.isArray(account.email))
-      return account.email.map(a => a.email().email)
-    if (isString(account.email().email)) return account.email().email
+    const out = [] 
+
+    Array.from(['email', 'email_work', 'email_other']).forEach((key) => {
+      if (isFunction(account[key])) {
+        out.push(account[key]().email)
+      }
+    })
+
+    return out
   },
   _checkForAccountExistence: async function(emails = []) {
-
+    let existingUserId = 0
+    for (let email of emails) {
+      try {
+        existingUserId = await rest.checkIfEmailExists(email)
+        break;
+      } catch (e) {
+        continue
+      }
+    }
+    return existingUserId
   },
   doImport: async function(account) {
-      const existingUserId = await rest.checkIfEmailExists(account.email().email)
-      const existingUserId = await this._checkForAccountExistence(this._extractEmails(account))
-
+      let knownEmails = this._extractEmails(account)
+      let existingUserId = await this._checkForAccountExistence(knownEmails)
+      
       // existence promise: if rejected, account does not exist. if resolved, it contains an id. 
 
       /*   const existingContactId = await account.exists()
@@ -138,17 +155,19 @@ const ImportService = {
           const organizationPayload = account['organization']
           const { is_error, id: orgaId } = await rest.createEntity('contact', organizationPayload)
           if (is_error || !orgaId) {
-            return this.rejectWithEmail(account.email().email);
+            return this.rejectWithEmail(knownEmails);
           }
           organizationId = orgaId
         }
 
-        const contactPayload = account['contact'](organizationId);
+        const contactPayload = account['contact'](organizationId)
         const { is_error, id } = await rest.createEntity('contact', contactPayload)
 
         if (is_error || !id) {
-          return this.rejectWithEmail(account.email().email);
+          return this.rejectWithEmail(knownEmails);
         }
+
+        const errors = []
 
         for (const k of PAYLOAD_ALLOW_LIST) {
           // the tag payloads are in an array of functions, not only a function
@@ -158,17 +177,17 @@ const ImportService = {
 
             for(let p of payloadsWithContactId) {
               const pRes = await rest.createEntity(k, p)
-              if (pRes.is_error) return this.rejectWithEmail(account.email().email);
+              if (pRes.is_error) return errors.push(pRes)
             }
-            continue;
           }
           // all other payloads are a curried function where the payload is derived
           // after calling the function with the id of the created contact
           if (typeof account[k] === "function") {
-            const payloadWithContactId = account[k](id);
+            if (isEmpty(account[k](id))) continue
+            const payloadWithContactId = account[k](id)
             if (this._filterContent(k, payloadWithContactId)) {
               const pRes = await rest.createEntity(k, payloadWithContactId)
-              if (pRes.is_error) return this.rejectWithEmail(account.email().email);
+              if (pRes.is_error) return errors.push(pRes)
             } 
           }
         }
@@ -178,8 +197,11 @@ const ImportService = {
         const contributionExists = await rest.checkForExistingContribution(existingUserId, payload['total_amount'], payload['receive_date'])
         if (contributionExists) return 
         const pRes = await rest.createEntity('contribution', payload)
-        if (pRes.is_error) return this.rejectWithEmail(account.email().email);
-        
+        if (pRes.is_error) return errors.push(pRes)
+      }
+
+      if (errors.length) {
+        return this.rejectWithEmail(knownEmails, errors)
       }
 
       return;
