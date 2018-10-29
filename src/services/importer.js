@@ -1,5 +1,5 @@
 import Promise from 'bluebird'
-import { isString } from 'lodash'
+import { isString, isFunction, isEmpty } from 'lodash'
 import { 
   groupPayload, 
   tagPayload, 
@@ -75,27 +75,26 @@ const ImportService = {
       group_contact: groupPayload(groupId),
     }
   },
+  _enhanceWithTagPayload: function(basePayload, selectedTags = []) {
+    if (!selectedTags.length) return
+    return { 
+      ...basePayload,
+      entity_tag: tagPayload(selectedTags),
+    }     
+  },
   _mapRowToRules: function(row, ruleSetTitle, groupId = 0, selectedTags, countries) {
-    let out = {
-      emailAddress: row['Email'],
-      countryId: this._getCountryId(row['Land'] || row['Country'], countries),
-    };
+    const countryId = this._getCountryId(row['Land'] || row['Country'], countries)
 
-    out = this._enhanceWithGroupPayload(out, groupId)
+    let enhancedRow = {}
 
-
-    if (selectedTags.length) {
-      out = { 
-        ...out,
-        entity_tag: tagPayload(selectedTags),
-      }        
-    }
+    enhancedRow = this._enhanceWithGroupPayload(enhancedRow, groupId)
+    enhancedRow = this._enhanceWithTagPayload(enhancedRow, selectedTags)
 
     const ruleSet = getPayloadRules(ruleSetTitle)
-    const keysToMatch = Object.keys(ruleSet);
-    const out = keysToMatch.reduce((acc, key) => ({  ...acc, [key]: ruleSet[key](row) }), {})
+    const keysToMatch = Object.keys(ruleSet)
+    enhancedRow = keysToMatch.reduce((acc, key) => ({  ...acc, [key]: ruleSet[key]({ ...row, countryId }) }), { ...enhancedRow })
 
-    return out;
+    return enhancedRow;
   },
   _filterContent: function(k, data) {
     if (k === 'customValue') {
