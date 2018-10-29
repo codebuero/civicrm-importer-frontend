@@ -9,7 +9,18 @@ import {
 } from './payload-rules'
 import { rest } from './rest'
 
-const PAYLOAD_ALLOW_LIST = ['address','email','contribution','customValue', 'group_contact', 'entity_tag']
+const PAYLOAD_ALLOW_LIST = [
+  'address',
+  'email',
+  'email_work', 
+  'email_other',
+  'contribution',
+  'customValue', 
+  'group_contact', 
+  'entity_tag',
+  'phone_work',
+  'phone_mobile',
+]
 
 const ImportService = {
   mapDataOnRuleset: function(data = [], ruleSet = {}, groupId = 0, selectedTags = [], countries = []) {
@@ -60,9 +71,8 @@ const ImportService = {
     if (!groupId) return basePayload
 
     return { 
-        ...basePayload,
-        group_contact: groupPayload(groupId),
-      }
+      ...basePayload,
+      group_contact: groupPayload(groupId),
     }
   },
   _mapRowToRules: function(row, ruleSetTitle, groupId = 0, selectedTags, countries) {
