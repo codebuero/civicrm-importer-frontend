@@ -213,6 +213,7 @@ const journalistsPayload = {
         return;
     },
     address: (row) => (contactId) => {
+        if (!row.countryId) return {}
         return {
             contact_id: contactId,
             location_type_id: 2,
@@ -220,13 +221,16 @@ const journalistsPayload = {
             country_id: row.countryId,
         }
     },
-    email_work: (row) => (contactId = 0) => ({
-        contact_id: contactId,
-        email: row['Email (1)'],
-        location_type_id: 2,
-        is_primary: 1,
-    }),
-    email_other: (row) => (contactId = 0) => {
+    email_work: (row) => (contactId = 0) => {
+        const email = get(row, 'Email (1)', '')
+        if (!email) return {}
+        return {
+            contact_id: contactId,
+            email,
+            location_type_id: 2,
+            is_primary: 1,
+        }
+    },    email_other: (row) => (contactId = 0) => {
         const email = get(row, 'Email (2)', '')
         if (!email) return {}
         return {
