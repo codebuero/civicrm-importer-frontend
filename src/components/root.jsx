@@ -9,6 +9,7 @@ import EnhanceData from './enhance-data'
 import Import from './import'
 import NavigationBar from './navigation-bar'
 import ErrorNotificationHandler from './error-notification'
+import ExistingAccounts from './existing-accounts-table'
 import { rest } from '../services/rest'
 import ImporterService from '../services/importer'
 
@@ -21,6 +22,7 @@ const DEFAULT_STATE = {
   progress: 0,
   importRuns: 0,
   importErrors: [],
+  existingAccounts: [],
   apiAvailable: false,
   data: {
     rulesSet: { 
@@ -86,6 +88,7 @@ export default class CiviCrmImporter extends React.Component {
     this.selectData = this.selectData.bind(this);
     this.resetImport = this.resetImport.bind(this);
     this.initialRequest = this.initialRequest.bind(this);
+    this.setProgress = this.setProgress.bind(this);
 
     this.startImport = this.startImport.bind(this);
     this.state = this.resetState();
@@ -114,27 +117,11 @@ export default class CiviCrmImporter extends React.Component {
         apiAvailable: true,
       })
     } catch(e) {
+      console.error(e)
       this.setState({
         apiAvailable: false
       })
-      return
     }
-
-    let prefixes, countries = []
-
-    try {
-      const { prefixes, countries } = await Promise.props({ prefixes: rest.fetchPrefixes(), countries: rest.fetchCountries() })
-      if (!prefixes.values.length || !countries.values.length) {
-        throw new Error('No prefixes nor countries found.')
-      }
-      this.setState({
-        prefixes: prefixes.values,
-        countries: countries.values
-      })
-    } catch(e) {
-      return console.error(e)
-    }
-
   }
 
   resetState() {
@@ -229,37 +216,46 @@ export default class CiviCrmImporter extends React.Component {
       }
     }))  
   }
+
+  setProgress(current, total) {
+    this.setState({
+      progress: (current * 100) / total,
+    })
+  }
+
   async startImport() {
     this.setState({
       importing: true,
     })
 
-    const { selectedRuleSet, countries } = this.state;
+    const { selectedRuleSet } = this.state;
     const { data, selectedGroup, selectedTags } = this.state.importparameter;
-    const importData = ImporterService.mapDataOnRuleset(data, selectedRuleSet, selectedGroup, selectedTags, countries);
+    const importerService = new ImporterService(rest)
+    await importerService.init()
+    importerService.addSelectedData(data, selectedRuleSet, selectedGroup, selectedTags)
 
-    let i = 0;
-    const errors = [];
+    let errors, existing
 
-    for (let account of importData) {
-      i++
-      try {
-        console.log('doing import for ', account.emailAddress)
-        await ImporterService.doImport(account);
-        console.log('done successful import for ', account.emailAddress)
-      } catch (e){
-        errors.push(e);
-      }
-      this.setState({
-        progress: (i * 100) / importData.length,
-      })
+    try {
+      const results = await importerService.doImport(this.setProgress)
+      errors = results.errors
+      existing = results.existing
+    } catch(e) {
+      console.error(e)
+      errors = [new Error('Import failed due to unknown reasons')]
+      existing = [] 
     }
 
+    
     this.setState({
       importRuns: this.state.importRuns + 1,
       importing: false, 
       importErrors: errors,
+      existingAccounts: existing,
     })
+  }
+  cancelImport() {
+    
   }
   resetImport() {
     this.setState(this.resetState())
@@ -280,6 +276,11 @@ export default class CiviCrmImporter extends React.Component {
           importRuns={this.state.importRuns}
           importErrors={this.state.importErrors}
         />
+        {this.state.selectedRuleSet === 'journalists' && this.state.existingAccounts.length !== 0 && 
+          (<ExistingAccounts
+            accounts={this.state.existingAccounts}
+          />)
+        }
         {this.state.apiAvailable && (<div>
           {this.state.ui.selectedTopic === 'upload' && (
             <FileUploadInput 
