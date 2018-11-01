@@ -44,7 +44,7 @@ function checkIfEmailExists(email = '') {
         }, (res) => {
             if (res.is_error) return reject(new Error(res.error_message));
             if (res.count === 0) return reject(new Error(`Email ${email} not found.`));
-            if (res.count > 0) return resolve(res.values[0].contact_id);
+            if (res.count > 0) return resolve(parseInt(res.values[0].contact_id,10));
         })
     })
 }
