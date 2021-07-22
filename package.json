@@ -50,6 +50,6 @@
     "react-dropzone": "^3.13.4",
     "superagent": "^3.8.3",
     "worker-farm": "^1.5.0",
-    "xlsx": "^0.11.1"
+    "xlsx": "^0.17.0"
   }
 }
