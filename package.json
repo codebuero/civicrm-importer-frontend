@@ -43,7 +43,7 @@
     "fs-blob-store": "^5.2.1",
     "immutable": "^3.8.2",
     "lodash": "^4.17.11",
-    "moment": "^2.22.2",
+    "moment": "^2.29.2",
     "prop-types": "^15.5.6",
     "react": "^15.6.2",
     "react-dom": "^15.5.4",
